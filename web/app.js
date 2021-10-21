@@ -59,6 +59,7 @@ import {
 } from "pdfjs-lib";
 import { CursorTool, PDFCursorTools } from "./pdf_cursor_tools.js";
 import { PDFRenderingQueue, RenderingStates } from "./pdf_rendering_queue.js";
+import { initializeArxivInfo } from "./arxiv_info.js";
 import { OverlayManager } from "./overlay_manager.js";
 import { PasswordPrompt } from "./password_prompt.js";
 import { PDFAttachmentViewer } from "./pdf_attachment_viewer.js";
@@ -2341,6 +2342,8 @@ function webViewerPageRendered({ pageNumber, timestamp, error }) {
       stats,
     });
   });
+
+  initializeArxivInfo(PDFViewerApplication.pdfDocument);
 }
 
 function webViewerPageMode({ mode }) {

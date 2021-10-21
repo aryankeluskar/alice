@@ -11,7 +11,7 @@
   "permissions": [
     "fileBrowserHandler",
     "webRequest", "webRequestBlocking",
-    "<all_urls>",
+    "https://arxiv.org/*",
     "tabs",
     "webNavigation",
     "storage"
@@ -28,7 +28,7 @@
     "css": ["contentstyle.css"],
     "js": ["contentscript.js"]
   }],
-  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
+  "content_security_policy": "script-src 'self' https://cdn.jsdelivr.net 'unsafe-eval'; object-src 'self'",
   "file_browser_handlers": [{
     "id": "open-as-pdf",
     "default_title": "Open with PDF Viewer",

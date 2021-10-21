@@ -1,0 +1,57 @@
+/* 
+Adapted from:
+// tipsy, facebook style tooltips for jquery
+// version 1.0.0a
+// (c) 2008-2010 jason frame [jason@onehackoranother.com]
+// released under the MIT license 
+*/
+
+.tipsy { font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif; position: absolute; padding: 4px 4px 4px; z-index: 100000; }
+.tipsy-inner { 
+  background-color: rgb(192 169 255);;
+  color: black;
+  width: 300px;
+  padding: 10px 10px;
+  text-align: left;
+  border-radius: 6px;
+  -moz-border-radius: 6px;
+  -webkit-border-radius: 6px;
+}
+
+.tipsy-arrow { position: absolute; width: 0; height: 0; line-height: 0; border: 5px dashed rgb(192 169 255); }
+
+/* Rules to colour arrows */
+.tipsy-arrow-n { border-bottom-color: #000; }
+.tipsy-arrow-s { border-top-color: #000; }
+.tipsy-arrow-e { border-left-color: #000; }
+.tipsy-arrow-w { border-right-color: #000; }
+
+.tipsy-ne { top: 0px; right: 0px; padding-top: 15px; }
+.tipsy-nw { top: 0px; left: 0px; padding-top: 15px; }
+.tipsy-se { bottom: 0px; right: 0px; padding-bottom: 15px; }
+.tipsy-sw { bottom: 0px; left: 0px; padding-bottom: 15px; }
+
+.tipsy-nw .tipsy-arrow { top: 11px; left: 15px; border-bottom-style: solid; border-top: none; border-left-color: transparent; border-right-color: transparent;}
+.tipsy-ne .tipsy-arrow { top: 11px; right: 15px; border-bottom-style: solid; border-top: none;  border-left-color: transparent; border-right-color: transparent;}
+.tipsy-sw .tipsy-arrow { bottom: 11px; left: 15px; border-top-style: solid; border-bottom: none;  border-left-color: transparent; border-right-color: transparent; }
+.tipsy-se .tipsy-arrow { bottom: 11px; right: 15px; border-top-style: solid; border-bottom: none; border-left-color: transparent; border-right-color: transparent; }
+
+.arxiv_info_title {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.arxiv_info_date {
+  font-size: 8px;
+  font-style: italic;
+}
+
+.arxiv_info_author {
+  font-size: 10px;
+  padding: 3px 0px;
+}
+
+.arxiv_info_abstract {
+  font-size: 8px;
+  padding-top: 3px;
+}

@@ -14,6 +14,7 @@
  */
 
 @import url(pdf_viewer.css);
+@import url(arxiv_info.css);
 
 :root {
   --sidebar-width: 200px;
