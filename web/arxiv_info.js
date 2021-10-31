@@ -21,7 +21,6 @@ function parseBibtexReference(bibtexRef) {
 }
 
 function initializeArxivInfo(pdfDocument) {
-  console.log(pdfDocument);
   // current implementation calls this upon every viewer render,
   // so turn off callback before adding another one
   $("a").off();
@@ -167,7 +166,6 @@ function initializeArxivInfo(pdfDocument) {
           const height = parseInt(
             $(this).parent().parent().parent().css("height")
           );
-          console.log(leftPixels, topPixels, width, height);
           const northSouth = topPixels > height / 2 ? "s" : "n";
           const eastWest = leftPixels > width / 2 ? "e" : "w";
           tipsyDirection = `${northSouth}${eastWest}`;

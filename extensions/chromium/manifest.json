@@ -1,12 +1,12 @@
 {
   "manifest_version": 2,
-  "name": "PDF Viewer",
+  "name": "Arxiv Viewer",
   "version": "PDFJSSCRIPT_VERSION",
-  "description": "Uses HTML5 to display PDF files directly in the browser.",
+  "description": "Provides sneak peeks of referenced papers on arxiv.",
   "icons": {
-    "128": "icon128.png",
-    "48": "icon48.png",
-    "16": "icon16.png"
+    "128": "arxiv_viewer_icon128.png",
+    "48": "arxiv_viewer_icon48.png",
+    "16": "arxiv_viewer_icon16.png"
   },
   "permissions": [
     "fileBrowserHandler",
@@ -49,8 +49,8 @@
   },
   "page_action": {
     "default_icon": {
-      "19": "icon19.png",
-      "38": "icon38.png"
+      "16": "arxiv_viewer_icon16.png",
+      "48": "arxiv_viewer_icon48.png"
     },
     "default_title": "Show PDF URL",
     "default_popup": "pageActionPopup.html"
