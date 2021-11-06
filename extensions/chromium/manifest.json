@@ -9,19 +9,15 @@
     "16": "arxiv_viewer_icon16.png"
   },
   "permissions": [
-    "fileBrowserHandler",
     "webRequest", "webRequestBlocking",
-    "https://arxiv.org/*",
+    "https://arxiv.org/pdf/*",
     "tabs",
     "webNavigation",
     "storage"
   ],
   "content_scripts": [{
     "matches": [
-      "http://*/*",
-      "https://*/*",
-      "ftp://*/*",
-      "file://*/*"
+      "https://arxiv.org/pdf/*"
     ],
     "run_at": "document_start",
     "all_frames": true,
@@ -29,13 +25,6 @@
     "js": ["contentscript.js"]
   }],
   "content_security_policy": "script-src 'self' https://cdn.jsdelivr.net 'unsafe-eval'; object-src 'self'",
-  "file_browser_handlers": [{
-    "id": "open-as-pdf",
-    "default_title": "Open with PDF Viewer",
-    "file_filters": [
-      "filesystem:*.pdf"
-    ]
-  }],
   "storage": {
     "managed_schema": "preferences_schema.json"
   },
@@ -59,13 +48,6 @@
   "web_accessible_resources": [
     "content/web/viewer.html",
     "http:/*",
-    "https:/*",
-    "ftp:/*",
-    "file:/*",
-    "chrome-extension:/*",
-    "blob:*",
-    "data:*",
-    "filesystem:/*",
-    "drive:*"
+    "https:/*"
   ]
 }
