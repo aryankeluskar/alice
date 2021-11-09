@@ -7,7 +7,7 @@ the amazing open source web PDF viewer, [PDF.js](https://mozilla.github.io/pdf.j
 
 ## Installation
 
-Coming soon to the Chrome Web Store.
+The best way to install is from the Chrome Web Store directly [here](https://chrome.google.com/webstore/detail/arxiv-viewer/cecdoioelofhklejiembhfjfhbilcgdo).
 
 You can also install from source with the following commands. First clone this repository.
 ```
