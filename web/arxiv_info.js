@@ -168,7 +168,8 @@ async function extractCitationFromPdf(pdfDocument, pdfLink) {
     // Find text items near the destination coordinates with wider range
     const nearbyText = textContent.items.filter(item => {
       const dy = item.transform[5] - y;
-      return dy < 0 && dy > -300;
+      // Increased range to capture more context
+      return dy < 50 && dy > -300;
     });
 
     // Sort items by y-coordinate (top to bottom) and x-coordinate (left to right)
@@ -180,62 +181,69 @@ async function extractCitationFromPdf(pdfDocument, pdfLink) {
       return yDiff;
     });
 
-    // First try to extract text in the traditional way for bracket-based references
+    // Join all nearby text
     const simpleText = nearbyText.map(item => item.str).join(' ');
-    const bracketMatch = simpleText.match(/\[(.*?)\]/);
+    console.log("Found nearby text:", simpleText);
+
+    // First try to match bracket-style citations [1]
+    const bracketMatch = simpleText.match(/\[(\d+)\]/);
     if (bracketMatch) {
-      // If we found brackets, use the existing logic
-      return simpleText.substring(simpleText.indexOf(']') + 1, simpleText.indexOf('[', simpleText.indexOf(']') + 1));
-    }
-
-    // If no brackets found, try to extract a two-column format reference
-    // Group items by lines (items with similar y-coordinates)
-    const lines = [];
-    let currentLine = [];
-    let currentY = null;
-
-    for (const item of nearbyText) {
-      if (currentY === null || Math.abs(item.transform[5] - currentY) < 5) {
-        currentLine.push(item);
-      } else {
-        if (currentLine.length > 0) {
-          lines.push(currentLine);
+      // Look for the corresponding reference in the text
+      const refNumber = bracketMatch[1];
+      const refPattern = new RegExp(`\\[${refNumber}\\]([^\\[]+)`);
+      const fullTextMatch = simpleText.match(refPattern);
+      
+      if (fullTextMatch && fullTextMatch[1]) {
+        return fullTextMatch[1].trim();
+      }
+      
+      // If not found in current text, look in subsequent lines
+      for (let i = 0; i < nearbyText.length; i++) {
+        if (nearbyText[i].str.includes(`[${refNumber}]`)) {
+          // Collect text after the reference number until next bracket or significant gap
+          let citation = '';
+          let j = i + 1;
+          while (j < nearbyText.length && 
+                 !nearbyText[j].str.match(/^\[\d+\]/) &&
+                 Math.abs(nearbyText[j].transform[5] - nearbyText[i].transform[5]) < 50) {
+            citation += nearbyText[j].str + ' ';
+            j++;
+          }
+          if (citation.trim()) {
+            return citation.trim();
+          }
         }
-        currentLine = [item];
       }
-      currentY = item.transform[5];
-    }
-    if (currentLine.length > 0) {
-      lines.push(currentLine);
     }
 
-    // Combine lines into text, handling potential column breaks
-    let textString = '';
-    let inReference = false;
-    let referenceStartY = null;
-
-    for (const line of lines) {
-      const lineText = line.map(item => item.str).join(' ');
-
-      // Check if this line starts a new reference
-      if (lineText.match(/^[A-Z][\w\s,\.]+?et al\.?|^[A-Z][\w\s,\.]+?\sand\s|^\d+\.\s+[A-Z]/)) {
-        if (inReference && textString.trim()) {
-          // We've found the start of the next reference
-          break;
+    // Try to match author-year style citations (Author, Year)
+    const authorYearMatch = simpleText.match(/\(([^)]+?)(?:,\s*\d{4}|\s+et\s+al\.?(?:,\s*\d{4})?)\)/);
+    if (authorYearMatch) {
+      const authorName = authorYearMatch[1].split(',')[0].trim();
+      
+      // Look for the full reference containing this author
+      for (let i = 0; i < nearbyText.length; i++) {
+        const lineText = nearbyText[i].str;
+        if (lineText.includes(authorName)) {
+          // Collect the full reference
+          let citation = lineText;
+          let j = i + 1;
+          while (j < nearbyText.length && 
+                 Math.abs(nearbyText[j].transform[5] - nearbyText[i].transform[5]) < 20) {
+            citation += ' ' + nearbyText[j].str;
+            j++;
+          }
+          if (citation.trim()) {
+            return citation.trim();
+          }
         }
-        inReference = true;
-        referenceStartY = line[0].transform[5];
-      }
-
-      // Only include lines that are part of the same reference (within reasonable vertical distance)
-      if (inReference && (!referenceStartY || Math.abs(line[0].transform[5] - referenceStartY) < 100)) {
-        textString += lineText + ' ';
       }
     }
 
-    return textString.trim();
+    // If no specific format is found, return the cleaned nearby text
+    return simpleText.trim();
   }
-  return null; ``
+  return null;
 }
 
 async function trySemanticScholar(paperTitle) {
