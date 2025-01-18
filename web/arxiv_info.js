@@ -1,26 +1,5 @@
 /* eslint-disable no-undef */
 
-function getBibtexReferenceFromInternalLink(link) {
-  const chunks = link.split("#");
-  console.log("chunks", chunks);
-  if (chunks.length < 2) {
-    return null;
-  }
-  if (!chunks[1].startsWith("cite.")) {
-    return null;
-  }
-  return chunks[1].substr(5);
-}
-
-function parseBibtexReference(bibtexRef) {
-  const regex = /^([a-zA-Z]+)(\d{4})([a-zA-Z]+)$/g;
-  const match = regex.exec(bibtexRef);
-  if (match) {
-    return { author: match[1], year: match[2], title: match[3] };
-  }
-  return null;
-}
-
 // Helper functions moved outside of event handlers for better scoping
 function getTipsyDirection(element) {
   try {
@@ -68,11 +47,33 @@ function makeUrlsClickable(text) {
   return text.replace(urlRegex, url => `<a href="${url}" target="_blank">${url}</a>`);
 }
 
-function displayArxivInfo(element, { link, fullTitle, abstract, date, authors }) {
-  console.log("displaying arxiv info", { link, fullTitle, abstract, date, authors });
+function displayPopupInfo(element, { link, fullTitle, abstract, date, authors }) {
+  // First check if the user is still hovering over the link
+  if (!$(element).is(":hover")) {
+    console.log("User no longer hovering, skipping popup display");
+    return;
+  }
+
+  console.log("displaying info: ", { link, fullTitle, abstract, date, authors });
+
+  if (!abstract) {
+    abstract = "No abstract found";
+  }
 
   if (abstract === "null") {
-    abstract = "No abstract available";
+    abstract = "No abstract found";
+  }
+
+  if (!authors) {
+    authors = ["No authors found"];
+  }
+
+  if (!date) {
+    date = "No date found";
+  }
+
+  if (!link) {
+    link = "#";
   }
 
   let dateString;
@@ -95,9 +96,9 @@ function displayArxivInfo(element, { link, fullTitle, abstract, date, authors })
   const tipsyDirection = getTipsyDirection(element);
 
   const htmlString = `
-    <div class="tipsy tipsy-${tipsyDirection}">
+    <div class="tipsy tipsy-${tipsyDirection}" style="pointer-events: none;">
     <div class="tipsy-arrow"></div>
-    <div class="tipsy-inner">
+    <div class="tipsy-inner" style="pointer-events: auto;">
     <div class="arxiv_info_title">
       ${fullTitle}
       ${link !== '#' ? `<a href="${link}" title="arXiv link" target="_blank"> <img src = "images/link-icon.svg" alt="Link Icon" width="12" height="12"/></a>` : ''}
@@ -215,7 +216,7 @@ async function extractCitationFromPdf(pdfDocument, pdfLink) {
 
     for (const line of lines) {
       const lineText = line.map(item => item.str).join(' ');
-      
+
       // Check if this line starts a new reference
       if (lineText.match(/^[A-Z][\w\s,\.]+?et al\.?|^[A-Z][\w\s,\.]+?\sand\s|^\d+\.\s+[A-Z]/)) {
         if (inReference && textString.trim()) {
@@ -234,8 +235,152 @@ async function extractCitationFromPdf(pdfDocument, pdfLink) {
 
     return textString.trim();
   }
-  return null;``
+  return null; ``
 }
+
+async function trySemanticScholar(paperTitle) {
+  try {
+    const apiEndpoint = `https://api.semanticscholar.org/graph/v1/paper/search/match?query=${encodeURIComponent(paperTitle)}`;
+    const apiResponse = await fetchWithRetry(apiEndpoint);
+    const apiData = await apiResponse.json();
+
+    if (apiData.data && apiData.data[0]) {
+      const paperId = apiData.data[0].paperId;
+      const paperEndpoint = `https://api.semanticscholar.org/graph/v1/paper/${paperId}?fields=abstract,year,title,openAccessPdf,authors`;
+      const paperResponse = await fetchWithRetry(paperEndpoint);
+      const paperData = await paperResponse.json();
+
+      return {
+        link: paperData.openAccessPdf?.url || '#',
+        fullTitle: paperData.title,
+        abstract: paperData.abstract,
+        date: paperData.year,
+        authors: paperData.authors?.map(author => author.name) || []
+      };
+    }
+  } catch (error) {
+    console.log("Semantic Scholar search failed:", error);
+  }
+  return null;
+}
+
+async function tryCrossref(citation) {
+  try {
+    const crossrefEndpoint = `https://api.crossref.org/works?query.bibliographic=${encodeURIComponent(citation)}&rows=1`;
+    const crossrefResponse = await fetchWithRetry(crossrefEndpoint);
+    const crossrefData = await crossrefResponse.json();
+
+    if (crossrefData.message?.items?.[0]) {
+      const paper = crossrefData.message.items[0];
+
+      return {
+        link: paper.URL || '#',
+        fullTitle: paper.title?.[0] || 'Unknown Title',
+        abstract: paper.abstract || 'No abstract available',
+        date: paper.published?.['date-parts']?.[0]?.[0],
+        authors: paper.author?.map(author =>
+          `${author.given || ''} ${author.family || ''}`
+        ) || []
+      };
+    }
+  } catch (error) {
+    console.log("Crossref search failed:", error);
+  }
+  return null;
+}
+
+// Helper function to handle citation fallback with Semantic Scholar API and Crossref
+async function handleCitationFallback(element, citation) {
+  // Clean up citation text
+  citation = citation.trim().replace(/\s+/g, ' ');
+
+  // Extract year if present
+  let year = null;
+  const yearMatch = citation.match(/\b(19|20)\d{2}\b/);
+  if (yearMatch) {
+    year = parseInt(yearMatch[0]);
+  }
+
+  const patterns = [
+    /(?:^|\.\s+)([^.]+?)(?=\.\s+(?:In|arXiv|URL|Advances|Nature|volume|pp\.))/,
+    /(?:^|\.\s+)([^.]+?)(?=\.\s+(?:\d{4}|\(\d{4}\)))/,
+    /(?:(?:[A-Z][a-z]*\.?\s+)*[A-Z][a-z]+(?:\s*,\s*(?:[A-Z][a-z]*\.?\s+)*[A-Z][a-z]+)*(?:\s*,\s*et\s+al\.)?\s*\.\s*)([^.]+?)(?=\.\s+arXiv|\,\s+arXiv)/,
+    /(?:(?:[A-Z][a-z]*\.?\s+)*[A-Z][a-z]+(?:\s*,\s*(?:[A-Z][a-z]*\.?\s+)*[A-Z][a-z]+)*(?:\s*,\s*et\s+al\.)?\s*\.\s*)([^.]+?)(?=\.\s+In|\,\s+In)/,
+    /(?:(?:[A-Z][a-z]*\.?\s+)*[A-Z][a-z]+(?:\s*,\s*(?:[A-Z][a-z]*\.?\s+)*[A-Z][a-z]+)*(?:\s*,\s*et\s+al\.)?\s*\.\s*)([^.]+?)(?=\.\s+Proceedings|\,\s+Proceedings)/,
+    /(?:(?:[A-Z][a-z]*\.?\s+)*[A-Z][a-z]+(?:\s*,\s*(?:[A-Z][a-z]*\.?\s+)*[A-Z][a-z]+)*\s*\.\s*)([^.]+?)(?=\.\s+arXiv|\,\s+arXiv)/,
+    /(?:(?:[A-Z][a-z]*\.?\s+)*[A-Z][a-z]+(?:\s*,\s*(?:[A-Z][a-z]*\.?\s+)*[A-Z][a-z]+)*\s*\.\s*)([^.]+?)(?=\.\s+In\s+[A-Z]|\,\s+In\s+[A-Z])/,
+    /(?:(?:[A-Z][a-z]*\.?\s+)*[A-Z][a-z]+(?:\s*,\s*(?:[A-Z][a-z]*\.?\s+)*[A-Z][a-z]+)*\s*\.\s*)([^.]+?)(?=\.\s+Proceedings|\,\s+Proceedings)/,
+    /(?:(?:[A-Z][a-z]*\.?\s+)*[A-Z][a-z]+(?:\s*,\s*(?:[A-Z][a-z]*\.?\s+)*[A-Z][a-z]+)*\s*\.\s*)([^.]+?)(?=\.\s+[A-Z][a-z]+|\,\s+[A-Z][a-z]+)/,
+    /(?:(?:[A-Z][a-z]*\.?\s+)*[A-Z][a-z]+(?:\s*,\s*(?:[A-Z][a-z]*\.?\s+)*[A-Z][a-z]+)*\s*\.\s*)([^.]+?)(?=\.)/,
+    /(?:(?:[A-Z][a-z]*\.?\s+)*[A-Z][a-z]+(?:\s*,\s*(?:[A-Z][a-z]*\.?\s+)*[A-Z][a-z]+)*\s*(?:,|,\s+and)\s+(?:[A-Z][a-z]*\.?\s+)*[A-Z][a-z]+\s*\.\s*)([^.]+?)(?=\.)/,
+    /(?:[A-Za-z]+(?:\s+[A-Za-z]+)*(?:,\s*[A-Za-z]+(?:\s+[A-Za-z]+)*)*(?:\s*,\s*and\s+[A-Za-z]+(?:\s+[A-Za-z]+)*)?)\s*\.\s*([^.]+?)(?=,|\.|$)/,
+  ];
+
+  try {
+    for (const pattern of patterns) {
+      const match = citation.match(pattern);
+      if (match && match[1]) {
+        const paperTitle = match[1].trim();
+        if (!paperTitle || paperTitle.length < 10) continue;
+
+        console.log("Extracted paper title:", paperTitle);
+
+        // Try Semantic Scholar if regex worked and we have a paper title
+        const semanticScholarResult = await trySemanticScholar(paperTitle);
+        console.log("semanticScholarResult", semanticScholarResult);
+        if (semanticScholarResult) {
+          displayPopupInfo(element, semanticScholarResult);
+          return;
+        }
+      }
+    }
+
+    console.log("no regex match for ", citation);
+
+    // Try Crossref if regex didn't work
+    const crossrefResult = await tryCrossref(citation, year);
+    console.log("crossrefResult", crossrefResult);
+    if (crossrefResult) {
+      displayPopupInfo(element, crossrefResult);
+      return;
+    }
+    else {
+      console.log("no crossref result for ", citation);
+    }
+
+  } catch (error) {
+    console.error("Error in citation fallback: ", error);
+  }
+}
+
+async function handleArxivCitation(element, citation) {
+  // get the arxiv id
+  let arxivId = citation.split("arXiv:")[1].split(" ")[0];
+  arxivId = arxivId.split(",")[0];
+  arxivId = arxivId.trim();
+  console.log("arxivId", arxivId);
+
+  const arxivIDEndpoint = `http://export.arxiv.org/api/query?id_list=${arxivId}`;
+  const arxivIDResponse = await fetch(arxivIDEndpoint);
+  const xmlText = await arxivIDResponse.text();
+  const parser = new DOMParser();
+  const xmlResponse = parser.parseFromString(xmlText, "text/xml");
+
+  const entry = xmlResponse.getElementsByTagName("entry")[0];
+  if (entry) {
+    const displayData = {
+      link: entry.getElementsByTagName("id")[0]?.textContent || '#',
+      fullTitle: entry.getElementsByTagName("title")[0]?.textContent || 'Unknown Title',
+      abstract: entry.getElementsByTagName("summary")[0]?.textContent || 'No abstract available',
+      date: entry.getElementsByTagName("published")[0]?.textContent || 'Unknown Date',
+      authors: Array.from(entry.getElementsByTagName("author")).map(a => a.children[0].textContent)
+    };
+
+    displayPopupInfo(element, displayData);
+    return;
+  }
+}
+
 
 // Main initialization function
 function initializeArxivInfo(pdfDocument) {
@@ -256,8 +401,14 @@ function initializeArxivInfo(pdfDocument) {
       try {
         const citation = await extractCitationFromPdf(pdfDocument, pdfLink);
         console.log("citation ", citation);
+
         if (citation) {
-          handleCitationFallback(this, citation);
+          // Special handling for arXiv citations since it has a much better API
+          if (citation.includes("arXiv")) {
+            handleArxivCitation(this, citation);
+          } else {
+            handleCitationFallback(this, citation);
+          }
           return;
         }
 
@@ -268,115 +419,6 @@ function initializeArxivInfo(pdfDocument) {
 
     }
   });
-}
-
-// Helper function to handle citation fallback with Semantic Scholar API
-async function handleCitationFallback(element, citation) {
-  // Clean up citation text
-  citation = citation.trim().replace(/\s+/g, ' ');
-  
-  // Special handling for arXiv citations
-  if (citation.includes("arXiv")) {
-    // get the arxiv id
-    let arxivId = citation.split("arXiv:")[1].split(" ")[0];
-    arxivId = arxivId.split(",")[0];
-    arxivId = arxivId.trim();
-    console.log("arxivId", arxivId);
-
-    const arxivIDEndpoint = `http://export.arxiv.org/api/query?id_list=${arxivId}`;
-    const arxivIDResponse = await fetch(arxivIDEndpoint);
-    const xmlText = await arxivIDResponse.text();
-    const parser = new DOMParser();
-    const xmlResponse = parser.parseFromString(xmlText, "text/xml");
-
-    const entry = xmlResponse.getElementsByTagName("entry")[0];
-    if (entry) {
-      const displayData = {
-        link: entry.getElementsByTagName("id")[0]?.textContent || '#',
-        fullTitle: entry.getElementsByTagName("title")[0]?.textContent || 'Unknown Title',
-        abstract: entry.getElementsByTagName("summary")[0]?.textContent || 'No abstract available',
-        date: entry.getElementsByTagName("published")[0]?.textContent || 'Unknown Date',
-        authors: Array.from(entry.getElementsByTagName("author")).map(a => a.children[0].textContent)
-      };
-
-      displayArxivInfo(element, displayData);
-      return;
-    }
-  }
-
-  // Extract year if present
-  let year = null;
-  const yearMatch = citation.match(/\b(19|20)\d{2}\b/);
-  if (yearMatch) {
-    year = parseInt(yearMatch[0]);
-  }
-
-  const patterns = [
-    // Add new patterns for references section format
-    /(?:^|\.\s+)([^.]+?)(?=\.\s+(?:In|arXiv|URL|Advances|Nature|volume|pp\.))/,
-    /(?:^|\.\s+)([^.]+?)(?=\.\s+(?:\d{4}|\(\d{4}\)))/,
-    // Existing patterns
-    /(?:[A-Z]\.\s+[A-Za-z]+(?:\s*,\s*[A-Z]\.\s+[A-Za-z]+)*(?:\s*,\s*et\s+al\.)?\s*\.\s*)([^.]+?)(?=\.\s+arXiv|\,\s+arXiv)/,
-    /(?:[A-Z]\.\s+[A-Za-z]+(?:\s*,\s*[A-Z]\.\s+[A-Za-z]+)*(?:\s*,\s*et\s+al\.)?\s*\.\s*)([^.]+?)(?=\.\s+In|\,\s+In)/,
-    /(?:[A-Z]\.\s+[A-Za-z]+(?:\s*,\s*[A-Z]\.\s+[A-Za-z]+)*(?:\s*,\s*et\s+al\.)?\s*\.\s*)([^.]+?)(?=\.\s+Proceedings|\,\s+Proceedings)/,
-    /(?:(?:[A-Z]\.\s*)+[A-Za-z]+(?:\s*,\s*(?:[A-Z]\.\s*)+[A-Za-z]+)*\s*\.\s*)([^.]+?)(?=\.\s+arXiv|\,\s+arXiv)/,
-    /(?:(?:[A-Z]\.\s*)+[A-Za-z]+(?:\s*,\s*(?:[A-Z]\.\s*)+[A-Za-z]+)*\s*\.\s*)([^.]+?)(?=\.\s+In\s+[A-Z]|\,\s+In\s+[A-Z])/,
-    /(?:(?:[A-Z]\.\s*)+[A-Za-z]+(?:\s*,\s*(?:[A-Z]\.\s*)+[A-Za-z]+)*\s*\.\s*)([^.]+?)(?=\.\s+Proceedings|\,\s+Proceedings)/,
-    /(?:(?:[A-Z]\.\s*)+[A-Za-z]+(?:\s*,\s*(?:[A-Z]\.\s*)+[A-Za-z]+)*\s*\.\s*)([^.]+?)(?=\.\s+[A-Z][a-z]+|\,\s+[A-Z][a-z]+)/,
-    /(?:(?:[A-Z]\.\s*)+[A-Za-z]+(?:\s*,\s*(?:[A-Z]\.\s*)+[A-Za-z]+)*\s*\.\s*)([^.]+?)(?=\.)/,
-    /(?:(?:[A-Z]\.\s*)+[A-Za-z]+(?:\s*,\s*(?:[A-Z]\.\s*)+[A-Za-z]+)*\s*(?:,|,\s+and)\s+(?:[A-Z]\.\s*)+[A-Za-z]+\s*\.\s*)([^.]+?)(?=\.)/,
-    /(?:[A-Za-z]+(?:\s+[A-Za-z]+)*(?:,\s*[A-Za-z]+(?:\s+[A-Za-z]+)*)*(?:\s*,\s*and\s+[A-Za-z]+(?:\s+[A-Za-z]+)*)?)\s*\.\s*([^.]+?)(?=,|\.|$)/,
-  ];
-
-  try {
-    for (const pattern of patterns) {
-      const match = citation.match(pattern);
-      if (match && match[1]) {
-        const paperTitle = match[1].trim();
-        if (!paperTitle || paperTitle.length < 10) continue;  // Skip very short matches
-
-        console.log("Extracted paper title:", paperTitle);
-        const apiEndpoint = `https://api.semanticscholar.org/graph/v1/paper/search/match?query=${encodeURIComponent(paperTitle)}`;
-        const apiResponse = await fetchWithRetry(apiEndpoint);
-        const apiData = await apiResponse.json();
-
-        if (!apiData.data || !apiData.data[0]) {
-          continue;
-        }
-
-        const paperId = apiData.data[0].paperId;
-        const paperEndpoint = `https://api.semanticscholar.org/graph/v1/paper/${paperId}?fields=abstract,year,title,openAccessPdf,authors`;
-        const paperResponse = await fetchWithRetry(paperEndpoint);
-        const paperData = await paperResponse.json();
-
-        // Only use the result if the year matches (when we have a year)
-        if (year && paperData.year && Math.abs(year - paperData.year) > 1) {
-          continue;
-        }
-
-        const display_info = {
-          link: paperData.openAccessPdf?.url || '#',
-          fullTitle: paperData.title,
-          abstract: paperData.abstract,
-          date: paperData.year,
-          authors: paperData.authors?.map(author => author.name) || 
-                  citation.split(paperData.title)[0]
-                    .replace(/\.$/, '')
-                    .split(/,\s*|\sand\s+/)
-                    .map(author => author.trim())
-                    .filter(author => author.length > 0)
-        };
-
-        displayArxivInfo(element, display_info);
-        return;
-      }
-    }
-
-    console.log("no regex match for ", citation);
-
-  } catch (error) {
-    console.error("Error in citation fallback:", error);
-  }
 }
 
 export { initializeArxivInfo };
