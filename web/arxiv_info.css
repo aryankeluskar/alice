@@ -8,9 +8,11 @@ Adapted from:
 
 .tipsy { 
   font-family: "Computer Modern Serif", "Latin Modern Roman", "Latin Modern Math", "CMU Serif", "Libertinus Serif", "STIX Two Text", "Times New Roman", Times, serif; 
-  position: absolute; 
+  position: absolute;
   padding: 4px 4px 4px; 
-  z-index: 100000; 
+  z-index: 2147483647;
+  transform: translateZ(0); /* Create new stacking context */
+  will-change: transform; /* Ensure stacking context */
 }
 .tipsy-inner { 
   background-color: rgb(192 169 255);;

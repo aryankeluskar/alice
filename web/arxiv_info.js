@@ -123,19 +123,20 @@ function delay(ms) {
 }
 
 // Helper function to handle API requests with retry logic
-async function fetchWithRetry(url, options = {}, retries = 6, backoffDelay = 200) {
+async function fetchWithRetry(url, options = {}, retries = 2) {
+  await delay(300);
   for (let i = 0; i < retries; i++) {
     try {
       const response = await fetch(url, options);
       if (response.status === 429) {
-        // Rate limit hit - wait and retry
-        await delay(backoffDelay * Math.pow(2, i)); // Exponential backoff
+        // Rate limit hit - wait exactly 1 second before retry
+        await delay(1000);
         continue;
       }
       return response;
     } catch (error) {
-      if (i === retries - 1) throw error; // Throw if last retry
-      await delay(backoffDelay * Math.pow(2, i)); // Exponential backoff
+      if (i === retries - 1) throw error;
+      await delay(1000); // Always wait 1 second between retries
     }
   }
   throw new Error(`Failed after ${retries} retries`);
@@ -163,17 +164,77 @@ async function extractCitationFromPdf(pdfDocument, pdfLink) {
     const page = await pdfDocument.getPage(pageNum);
     const textContent = await page.getTextContent();
 
-    // Find text items near the destination coordinates
+    // Find text items near the destination coordinates with wider range
     const nearbyText = textContent.items.filter(item => {
       const dy = item.transform[5] - y;
-      return dy < 0 && dy > -200;
+      return dy < 0 && dy > -300;
     });
 
-    const textString = nearbyText.map(item => item.str).join(' ');
-    const citation = textString.substring(textString.indexOf(']') + 1, textString.indexOf('[', textString.indexOf(']') + 1));
-    return citation ? citation.trim() : null;
+    // Sort items by y-coordinate (top to bottom) and x-coordinate (left to right)
+    nearbyText.sort((a, b) => {
+      const yDiff = b.transform[5] - a.transform[5];
+      if (Math.abs(yDiff) < 5) { // If y-coordinates are close, sort by x
+        return a.transform[4] - b.transform[4];
+      }
+      return yDiff;
+    });
+
+    // First try to extract text in the traditional way for bracket-based references
+    const simpleText = nearbyText.map(item => item.str).join(' ');
+    const bracketMatch = simpleText.match(/\[(.*?)\]/);
+    if (bracketMatch) {
+      // If we found brackets, use the existing logic
+      return simpleText.substring(simpleText.indexOf(']') + 1, simpleText.indexOf('[', simpleText.indexOf(']') + 1));
+    }
+
+    // If no brackets found, try to extract a two-column format reference
+    // Group items by lines (items with similar y-coordinates)
+    const lines = [];
+    let currentLine = [];
+    let currentY = null;
+
+    for (const item of nearbyText) {
+      if (currentY === null || Math.abs(item.transform[5] - currentY) < 5) {
+        currentLine.push(item);
+      } else {
+        if (currentLine.length > 0) {
+          lines.push(currentLine);
+        }
+        currentLine = [item];
+      }
+      currentY = item.transform[5];
+    }
+    if (currentLine.length > 0) {
+      lines.push(currentLine);
+    }
+
+    // Combine lines into text, handling potential column breaks
+    let textString = '';
+    let inReference = false;
+    let referenceStartY = null;
+
+    for (const line of lines) {
+      const lineText = line.map(item => item.str).join(' ');
+      
+      // Check if this line starts a new reference
+      if (lineText.match(/^[A-Z][\w\s,\.]+?et al\.?|^[A-Z][\w\s,\.]+?\sand\s|^\d+\.\s+[A-Z]/)) {
+        if (inReference && textString.trim()) {
+          // We've found the start of the next reference
+          break;
+        }
+        inReference = true;
+        referenceStartY = line[0].transform[5];
+      }
+
+      // Only include lines that are part of the same reference (within reasonable vertical distance)
+      if (inReference && (!referenceStartY || Math.abs(line[0].transform[5] - referenceStartY) < 100)) {
+        textString += lineText + ' ';
+      }
+    }
+
+    return textString.trim();
   }
-  return null;
+  return null;``
 }
 
 // Main initialization function
@@ -191,137 +252,30 @@ function initializeArxivInfo(pdfDocument) {
       }
 
       const pdfLink = $(this).attr("href").split("#")[1];
-      const bibtexRef = getBibtexReferenceFromInternalLink($(this).attr("href"));
 
-      console.log("bibtexRef ", bibtexRef);
-
-      // Try arXiv API if we have a valid bibtex reference
-      if (bibtexRef) {
-        const parsedInfo = parseBibtexReference(bibtexRef);
-        if (!parsedInfo) {
-          console.log("no matching entry found on arxiv");
-          try {
-            const citation = await extractCitationFromPdf(pdfDocument, pdfLink);
-            if (citation) {
-              console.log("trying the citation fallback with ", citation);
-              handleCitationFallback(this, citation);
-            }
-          } catch (error) {
-            console.error("Error processing destination:", error);
-          }
+      try {
+        const citation = await extractCitationFromPdf(pdfDocument, pdfLink);
+        console.log("citation ", citation);
+        if (citation) {
+          handleCitationFallback(this, citation);
           return;
         }
 
-        if (parsedInfo) {
-          const { year, author, title } = parsedInfo;
-
-          try {
-            const arxivEndpoint = `http://export.arxiv.org/api/query?search_query=ti:${title}+AND+au:${author}&start=0&max_results=50`;
-            const response = await fetch(arxivEndpoint);
-
-            if (!response.ok) {
-              throw new Error('ArXiv API request failed');
-            }
-
-            const xmlText = await response.text();
-            const parser = new DOMParser();
-            const xmlResponse = parser.parseFromString(xmlText, "text/xml");
-
-            let matchingEntry = null;
-            for (const entry of xmlResponse.children[0].children) {
-              if (entry.nodeName !== "entry") {
-                continue;
-              }
-
-              if (
-                entry.getElementsByTagName("published").length > 0 &&
-                entry.getElementsByTagName("published")[0].textContent.includes(year) &&
-                entry.getElementsByTagName("author").length > 0 &&
-                entry.getElementsByTagName("author")[0].children[0].textContent.toLowerCase().endsWith(author) &&
-                entry.getElementsByTagName("title").length > 0 &&
-                entry.getElementsByTagName("title")[0].textContent.toLowerCase().startsWith(title)
-              ) {
-                if (matchingEntry) {
-                  displayArxivInfo(this, matchingEntry);
-                  return;
-                }
-                matchingEntry = entry;
-              }
-            }
-
-            if (!matchingEntry) {
-              console.log("no matching entry found on arxiv");
-              try {
-                const citation = await extractCitationFromPdf(pdfDocument, pdfLink);
-                if (citation) {
-                  console.log("trying the citation fallback with ", citation);
-                  handleCitationFallback(this, citation);
-                }
-              } catch (error) {
-                console.error("Error processing destination:", error);
-              }
-              return;
-            }
-
-            // check if user is still hovering before adding to DOM
-            if ($(this).parent().find("a:hover").length === 0) {
-              return;
-            }
-
-            if (
-              !matchingEntry.getElementsByTagName("id").length ||
-              !matchingEntry.getElementsByTagName("title").length ||
-              !matchingEntry.getElementsByTagName("author").length ||
-              !matchingEntry.getElementsByTagName("summary").length ||
-              !matchingEntry.getElementsByTagName("published").length
-            ) {
-              return;
-            }
-
-            const displayData = {
-              link: matchingEntry.getElementsByTagName("id")[0].textContent,
-              fullTitle: matchingEntry.getElementsByTagName("title")[0].textContent,
-              abstract: matchingEntry.getElementsByTagName("summary")[0].textContent,
-              date: matchingEntry.getElementsByTagName("published")[0].textContent,
-              authors: Array.from(matchingEntry.getElementsByTagName("author")).map(a => a.children[0].textContent)
-            };
-
-            displayArxivInfo(this, displayData);
-
-          } catch (error) {
-            console.error("Error processing arXiv API:", error);
-            let citation = null;
-            try {
-              citation = await extractCitationFromPdf(pdfDocument, pdfLink);
-              if (citation) {
-                console.log("trying the citation fallback with ", citation);
-                handleCitationFallback(this, citation);
-              }
-            } catch (error) {
-              console.error("Error processing destination:", error);
-            }
-          }
-        }
+      } catch (error) {
+        console.error("Error processing destination: ", error);
       }
+      return;
 
-      else {
-        let citation = null;
-        try {
-          citation = await extractCitationFromPdf(pdfDocument, pdfLink);
-          if (citation) {
-            console.log("trying the citation fallback with ", citation);
-            handleCitationFallback(this, citation);
-          }
-        } catch (error) {
-          console.error("Error processing destination:", error);
-        }
-      }
     }
   });
 }
 
 // Helper function to handle citation fallback with Semantic Scholar API
 async function handleCitationFallback(element, citation) {
+  // Clean up citation text
+  citation = citation.trim().replace(/\s+/g, ' ');
+  
+  // Special handling for arXiv citations
   if (citation.includes("arXiv")) {
     // get the arxiv id
     let arxivId = citation.split("arXiv:")[1].split(" ")[0];
@@ -350,7 +304,18 @@ async function handleCitationFallback(element, citation) {
     }
   }
 
+  // Extract year if present
+  let year = null;
+  const yearMatch = citation.match(/\b(19|20)\d{2}\b/);
+  if (yearMatch) {
+    year = parseInt(yearMatch[0]);
+  }
+
   const patterns = [
+    // Add new patterns for references section format
+    /(?:^|\.\s+)([^.]+?)(?=\.\s+(?:In|arXiv|URL|Advances|Nature|volume|pp\.))/,
+    /(?:^|\.\s+)([^.]+?)(?=\.\s+(?:\d{4}|\(\d{4}\)))/,
+    // Existing patterns
     /(?:[A-Z]\.\s+[A-Za-z]+(?:\s*,\s*[A-Z]\.\s+[A-Za-z]+)*(?:\s*,\s*et\s+al\.)?\s*\.\s*)([^.]+?)(?=\.\s+arXiv|\,\s+arXiv)/,
     /(?:[A-Z]\.\s+[A-Za-z]+(?:\s*,\s*[A-Z]\.\s+[A-Za-z]+)*(?:\s*,\s*et\s+al\.)?\s*\.\s*)([^.]+?)(?=\.\s+In|\,\s+In)/,
     /(?:[A-Z]\.\s+[A-Za-z]+(?:\s*,\s*[A-Z]\.\s+[A-Za-z]+)*(?:\s*,\s*et\s+al\.)?\s*\.\s*)([^.]+?)(?=\.\s+Proceedings|\,\s+Proceedings)/,
@@ -368,7 +333,7 @@ async function handleCitationFallback(element, citation) {
       const match = citation.match(pattern);
       if (match && match[1]) {
         const paperTitle = match[1].trim();
-        if (!paperTitle) continue;
+        if (!paperTitle || paperTitle.length < 10) continue;  // Skip very short matches
 
         console.log("Extracted paper title:", paperTitle);
         const apiEndpoint = `https://api.semanticscholar.org/graph/v1/paper/search/match?query=${encodeURIComponent(paperTitle)}`;
@@ -380,20 +345,26 @@ async function handleCitationFallback(element, citation) {
         }
 
         const paperId = apiData.data[0].paperId;
-        const paperEndpoint = `https://api.semanticscholar.org/graph/v1/paper/${paperId}?fields=abstract,year,title,openAccessPdf`;
+        const paperEndpoint = `https://api.semanticscholar.org/graph/v1/paper/${paperId}?fields=abstract,year,title,openAccessPdf,authors`;
         const paperResponse = await fetchWithRetry(paperEndpoint);
         const paperData = await paperResponse.json();
+
+        // Only use the result if the year matches (when we have a year)
+        if (year && paperData.year && Math.abs(year - paperData.year) > 1) {
+          continue;
+        }
 
         const display_info = {
           link: paperData.openAccessPdf?.url || '#',
           fullTitle: paperData.title,
           abstract: paperData.abstract,
           date: paperData.year,
-          authors: citation.split(paperData.title)[0]
-            .replace(/\.$/, '')
-            .split(/,\s*|\sand\s+/)
-            .map(author => author.trim())
-            .filter(author => author.length > 0)
+          authors: paperData.authors?.map(author => author.name) || 
+                  citation.split(paperData.title)[0]
+                    .replace(/\.$/, '')
+                    .split(/,\s*|\sand\s+/)
+                    .map(author => author.trim())
+                    .filter(author => author.length > 0)
         };
 
         displayArxivInfo(element, display_info);
