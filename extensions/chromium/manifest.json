@@ -13,7 +13,9 @@
     "https://arxiv.org/pdf/*",
     "tabs",
     "webNavigation",
-    "storage"
+    "storage",
+    "activeTab",
+    "*://api.semanticscholar.org/*"
   ],
   "content_scripts": [{
     "matches": [

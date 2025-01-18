@@ -6,7 +6,12 @@ Adapted from:
 // released under the MIT license 
 */
 
-.tipsy { font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif; position: absolute; padding: 4px 4px 4px; z-index: 100000; }
+.tipsy { 
+  font-family: "Computer Modern Serif", "Latin Modern Roman", "Latin Modern Math", "CMU Serif", "Libertinus Serif", "STIX Two Text", "Times New Roman", Times, serif; 
+  position: absolute; 
+  padding: 4px 4px 4px; 
+  z-index: 100000; 
+}
 .tipsy-inner { 
   background-color: rgb(192 169 255);;
   color: black;
@@ -47,11 +52,21 @@ Adapted from:
 }
 
 .arxiv_info_author {
-  font-size: 10px;
+  font-size: 8px;
   padding: 3px 0px;
 }
 
 .arxiv_info_abstract {
-  font-size: 8px;
+  font-size: 10px;
   padding-top: 3px;
+}
+
+.arxiv_info_abstract a {
+  color: #000000;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.arxiv_info_abstract a:hover {
+  text-decoration: none;
 }
