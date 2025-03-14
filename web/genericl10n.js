@@ -106,8 +106,9 @@ class GenericL10n extends L10n {
   }
 
   static async #createBundle(lang, baseURL, paths) {
-    const path = paths[lang];
+    const path = paths?.[lang];
     if (!path) {
+      console.warn(`No localization for ${lang} found in paths.`);
       return null;
     }
     const url = new URL(path, baseURL);
@@ -118,12 +119,19 @@ class GenericL10n extends L10n {
 
   static async #getPaths() {
     try {
-      const { href } = document.querySelector(`link[type="application/l10n"]`);
+      const linkEl = document.querySelector(`link[type="application/l10n"]`);
+      if (!linkEl) {
+        console.warn("No localization link element found in the document.");
+        return { baseURL: "./", paths: Object.create(null) };
+      }
+      const { href } = linkEl;
       const paths = await fetchData(href, /* type = */ "json");
 
       return { baseURL: href.replace(/[^/]*$/, "") || "./", paths };
-    } catch {}
-    return { baseURL: "./", paths: Object.create(null) };
+    } catch (err) {
+      console.error("Error loading localization data:", err);
+      return { baseURL: "./", paths: Object.create(null) };
+    }
   }
 
   static async *#generateBundlesFallback(lang) {
