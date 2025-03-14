@@ -52,7 +52,8 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "content/web/viewer.html"
+        "content/web/viewer.html",
+        "content/web/jquery-3.6.0.min.js"
       ],
       "matches": [
         "*://arxiv.org/*",
