@@ -890,7 +890,7 @@ function initializeArxivInfo(pdfDocument) {
           const style = document.createElement("style");
           style.id = "arxiv-toggle-style";
           style.textContent = `
-            .toggle-button {
+            .alice-toggle {
               display: inline-block;
               padding: calc(4px * var(--total-scale-factor, 1)) calc(8px * var(--total-scale-factor, 1));
               margin: 0 0 calc(5px * var(--total-scale-factor, 1)) 0;
@@ -906,16 +906,16 @@ function initializeArxivInfo(pdfDocument) {
               min-width: calc(70px * var(--total-scale-factor, 1));
               width: 100%;
             }
-            .toggle-button:hover {
+            .alice-toggle:hover {
               background-color: #e0e0e0;
               box-shadow: 0 calc(1px * var(--total-scale-factor, 1)) calc(2px * var(--total-scale-factor, 1)) rgba(0,0,0,0.1);
             }
-            .toggle-button.active {
+            .alice-toggle.active {
               background-color: #2196F3;
               color: white;
               border-color: #1976D2;
             }
-            .toggle-button.active:hover {
+            .alice-toggle.active:hover {
               background-color: #1976D2;
               box-shadow: 0 calc(1px * var(--total-scale-factor, 1)) calc(3px * var(--total-scale-factor, 1)) rgba(0,0,0,0.2);
             }
@@ -1164,8 +1164,8 @@ function initializeArxivInfo(pdfDocument) {
                   </div>
                 </div>
                 <div class="arxiv-controls">
-                  <button class="toggle-button" data-view="abstract">Summary</button>
-                  <button class="toggle-button" data-view="code">Code</button>
+                  <button class="alice-toggle" data-view="abstract">Summary</button>
+                  <button class="alice-toggle" data-view="code">Code</button>
                 </div>
               </div>
             </div>
@@ -1192,8 +1192,8 @@ function initializeArxivInfo(pdfDocument) {
                 </div>
                 </div>
                 <div class="arxiv-controls">
-                  <button class="toggle-button" data-view="abstract">Summary</button>
-                  <button class="toggle-button" data-view="code">Code</button>
+                  <button class="alice-toggle" data-view="abstract">Summary</button>
+                  <button class="alice-toggle" data-view="code">Code</button>
                 </div>
               </div>
             </div>
@@ -1213,7 +1213,7 @@ function initializeArxivInfo(pdfDocument) {
         let isButtonClicked = false;
 
         // Add .active class to the abstract button by default
-        $(`#${popupId} .toggle-button[data-view="abstract"]`).addClass("active");
+        $(`#${popupId} .alice-toggle[data-view="abstract"]`).addClass("active");
 
         // Create a more robust mouseleave detection
         let isMouseOverPopup = false;
@@ -1461,7 +1461,7 @@ function initializeArxivInfo(pdfDocument) {
         }
 
         // Add click event listener to the toggle button
-        $(`#${popupId} .toggle-button[data-view="abstract"]`).on(
+        $(`#${popupId} .alice-toggle[data-view="abstract"]`).on(
           "click",
           async function (e) {
             e.stopPropagation();
@@ -1470,7 +1470,7 @@ function initializeArxivInfo(pdfDocument) {
             console.log("Summary/Abstract button clicked");
 
             // Visual feedback - add active state to this button, remove from others
-            $(this).addClass("active").siblings(".toggle-button").removeClass("active");
+            $(this).addClass("active").siblings(".alice-toggle").removeClass("active");
 
             // Mark that the button was clicked to prevent popup from closing
             isButtonClicked = true;
@@ -1493,7 +1493,7 @@ function initializeArxivInfo(pdfDocument) {
         );
 
         // Add click event listener for the Code button
-        $(`#${popupId} .toggle-button[data-view="code"]`).on(
+        $(`#${popupId} .alice-toggle[data-view="code"]`).on(
           "click",
           async function (e) {
             e.stopPropagation();
@@ -1502,7 +1502,7 @@ function initializeArxivInfo(pdfDocument) {
             console.log("Code button clicked");
 
             // Visual feedback - add active state to this button, remove from others
-            $(this).addClass("active").siblings(".toggle-button").removeClass("active");
+            $(this).addClass("active").siblings(".alice-toggle").removeClass("active");
 
             // Mark that the button was clicked to prevent popup from closing
             isButtonClicked = true;
