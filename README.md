@@ -1,14 +1,14 @@
 # Alice
 
-### Alice is a Chrome Extension to supercharge your literature review, making research accessible to all.
+Alice is a Chrome Extension to supercharge your literature review, making research accessible to all.
 
-## Problem
+## Why?
 
 An average paper on arXiv **cites 30-50** other papers, that is 30-50 many concepts a reader may need to read through. Those new to research and those who read papers as a hobby face this barrier of entry, which could be demotivating and time-consuming. Currently, solutions include opening multiple tabs on your browser to have more context, but that is time-intensive and not optimal for your computing resources. With the advent of LLMs and AI tools, a lot of people use them to summarize key findings of a paper but that too requires one to navigate away from their paper and just makes the whole process inconvenient. 
 
-## Solution
+## How?
 
-By integrating multiple APIs and aggregating data from multiple sources, Alice is your go-to tool for literature review and software development. 
+By integrating multiple APIs and aggregating data from multiple sources, Alice is your go-to tool for literature review and academic software development. 
 
 ![alt text](./solution.png)
 
