@@ -958,14 +958,14 @@ function initializeArxivInfo(pdfDocument) {
               padding: calc(8px * var(--total-scale-factor, 1)) calc(8px * var(--total-scale-factor, 1));
             }
             .arxiv-header {
-              margin-bottom: 10px;
-              border-bottom: 1px solid #000;
-              padding-bottom: 10px;
+              margin-bottom: calc(10px * var(--total-scale-factor, 1));
+              border-bottom: calc(1px * var(--total-scale-factor, 1)) solid #000;
+              padding-bottom: calc(10px * var(--total-scale-factor, 1));
               position: relative;
             }
             .arxiv-main-content {
               flex: 1;
-              padding-right: 15px;
+              padding-right: calc(15px * var(--total-scale-factor, 1));
             }
             .arxiv-title-row {
               display: flex;
@@ -974,22 +974,22 @@ function initializeArxivInfo(pdfDocument) {
             }
             .arxiv-title {
               flex: 1;
-              margin-right: 15px;
+              margin-right: calc(15px * var(--total-scale-factor, 1));
             }
             .arxiv-controls {
               display: flex;
               flex-direction: column;
               align-items: flex-end;
               white-space: nowrap;
-              width: 80px;
+              width: calc(80px * var(--total-scale-factor, 1));
             }
             .arxiv-link {
               display: inline-flex;
               align-items: center;
               justify-content: center;
-              // padding: calc(14px * var(--total-scale-factor, 1)) calc(14px * var(--total-scale-factor, 1));
+              padding: calc(4px * var(--total-scale-factor, 1)) calc(4px * var(--total-scale-factor, 1));
               vertical-align: middle;
-              margin-left: 8px;
+              margin-left: calc(8px * var(--total-scale-factor, 1));
               margin-bottom: 0;
               position: relative;
               height: calc(14px * var(--total-scale-factor, 1));
@@ -1003,8 +1003,8 @@ function initializeArxivInfo(pdfDocument) {
               transform: scale(1.2);
             }
             .arxiv-link:focus {
-              outline: 2px solid #2196F3;
-              border-radius: 4px;
+              outline: calc(2px * var(--total-scale-factor, 1)) solid #2196F3;
+              border-radius: calc(4px * var(--total-scale-factor, 1));
             }
             .arxiv-info-row {
               display: flex;
@@ -1014,37 +1014,37 @@ function initializeArxivInfo(pdfDocument) {
               flex: 1;
             }
             .code-implementation {
-              max-height: 400px;
+              max-height: calc(400px * var(--total-scale-factor, 1));
               overflow-y: auto;
-              padding-right: 10px;
+              padding-right: calc(10px * var(--total-scale-factor, 1));
             }
             .code-content {
-              margin-bottom: 15px;
+              margin-bottom: calc(15px * var(--total-scale-factor, 1));
             }
             .copy-button {
               background-color: #C0A9FF;
               color: #555;
-              border: 1px solid #ddd;
-              border-radius: 4px;
-              padding: 6px 12px;
+              border: calc(1px * var(--total-scale-factor, 1)) solid #ddd;
+              border-radius: calc(4px * var(--total-scale-factor, 1));
+              padding: calc(6px * var(--total-scale-factor, 1)) calc(12px * var(--total-scale-factor, 1));
               cursor: pointer;
               transition: all 0.2s ease;
               font-weight: 500;
-              margin-top: 12px;
+              margin-top: calc(12px * var(--total-scale-factor, 1));
               display: block;
               text-align: center;
               width: 100%;
               font-family: 'Solway', serif;
-              font-size: 11px;
+              font-size: calc(11px * var(--total-scale-factor, 1));
             }
             .copy-button:hover {
               background-color: #e0e0e0;
-              box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+              box-shadow: 0 calc(1px * var(--total-scale-factor, 1)) calc(2px * var(--total-scale-factor, 1)) rgba(0,0,0,0.1);
             }
             .section-nav {
               display: flex;
               overflow-x: auto;
-              margin-bottom: 10px;
+              margin-bottom: calc(10px * var(--total-scale-factor, 1));
               white-space: nowrap;
               -ms-overflow-style: none;
               scrollbar-width: none;
@@ -1053,13 +1053,13 @@ function initializeArxivInfo(pdfDocument) {
               display: none;
             }
             .section-button {
-              padding: 3px 8px;
+              padding: calc(3px * var(--total-scale-factor, 1)) calc(8px * var(--total-scale-factor, 1));
               background-color: #f0f0f0;
               color: #333;
-              border: 1px solid #ddd;
-              border-radius: 12px;
-              margin-right: 5px;
-              font-size: 10px;
+              border: calc(1px * var(--total-scale-factor, 1)) solid #ddd;
+              border-radius: calc(12px * var(--total-scale-factor, 1));
+              margin-right: calc(5px * var(--total-scale-factor, 1));
+              font-size: calc(10px * var(--total-scale-factor, 1));
               cursor: pointer;
               transition: all 0.2s ease;
             }
@@ -1068,25 +1068,25 @@ function initializeArxivInfo(pdfDocument) {
             }
             .loading-container {
               text-align: center;
-              padding: 20px;
+              padding: calc(20px * var(--total-scale-factor, 1));
             }
             .loading-animation {
               display: inline-block;
-              width: 40px;
-              height: 40px;
+              width: calc(40px * var(--total-scale-factor, 1));
+              height: calc(40px * var(--total-scale-factor, 1));
               margin: 0 auto;
-              border: 3px solid rgba(192, 169, 255, 0.3);
+              border: calc(3px * var(--total-scale-factor, 1)) solid rgba(192, 169, 255, 0.3);
               border-radius: 50%;
               border-top-color: #C0A9FF;
               animation: spin 1s ease-in-out infinite;
             }
             .clipboard-notice {
-              margin-top: 15px;
-              padding: 10px;
+              margin-top: calc(15px * var(--total-scale-factor, 1));
+              padding: calc(10px * var(--total-scale-factor, 1));
               background-color: #EFF8FF;
-              border: 1px solid #BDE3FF;
-              border-radius: 5px;
-              font-size: 11px;
+              border: calc(1px * var(--total-scale-factor, 1)) solid #BDE3FF;
+              border-radius: calc(5px * var(--total-scale-factor, 1));
+              font-size: calc(11px * var(--total-scale-factor, 1));
               text-align: center;
               color: #0A558C;
               font-family: 'Solway', serif;
@@ -1098,20 +1098,20 @@ function initializeArxivInfo(pdfDocument) {
             .clipboard-notice .clipboard-code {
               font-family: monospace;
               background: #e0e0e0;
-              padding: 2px 5px;
-              border-radius: 3px;
+              padding: calc(2px * var(--total-scale-factor, 1)) calc(5px * var(--total-scale-factor, 1));
+              border-radius: calc(3px * var(--total-scale-factor, 1));
               color: #333;
               font-weight: 500;
             }
             .open-clipboard-button {
               display: block;
-              margin: 10px auto 0;
-              padding: 6px 12px;
+              margin: calc(10px * var(--total-scale-factor, 1)) auto 0;
+              padding: calc(6px * var(--total-scale-factor, 1)) calc(12px * var(--total-scale-factor, 1));
               background-color: #1E88E5;
               color: white;
               border: none;
-              border-radius: 4px;
-              font-size: 11px;
+              border-radius: calc(4px * var(--total-scale-factor, 1));
+              font-size: calc(11px * var(--total-scale-factor, 1));
               cursor: pointer;
               transition: all 0.2s ease;
               font-family: 'Solway', serif;
@@ -1119,7 +1119,7 @@ function initializeArxivInfo(pdfDocument) {
             }
             .open-clipboard-button:hover {
               background-color: #1565C0;
-              box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+              box-shadow: 0 calc(1px * var(--total-scale-factor, 1)) calc(3px * var(--total-scale-factor, 1)) rgba(0,0,0,0.2);
             }
             @keyframes spin {
               to {
@@ -1127,7 +1127,7 @@ function initializeArxivInfo(pdfDocument) {
               }
             }
             .loading-text {
-              margin-top: 10px;
+              margin-top: calc(10px * var(--total-scale-factor, 1));
               font-family: 'Solway', serif;
               color: #555;
             }
@@ -1190,8 +1190,8 @@ function initializeArxivInfo(pdfDocument) {
                   </div>
                   <div class="arxiv-info-row">
                     <div class="arxiv_info_author" style="font-family: 'Solway', serif;">${authorText}</div>
-                  <div class="arxiv_info_date" style="font-family: 'Solway', serif;">Published on ${dateString}.</div>
-                </div>
+                    <div class="arxiv_info_date" style="font-family: 'Solway', serif;">Published on ${dateString}.</div>
+                  </div>
                 </div>
                 <div class="arxiv-controls">
                   <button class="alice-toggle" data-view="abstract">Summary</button>
@@ -1546,7 +1546,7 @@ function initializeArxivInfo(pdfDocument) {
                 // Update display with code content
                 codeContentDiv.html(`
                   <div class="code-implementation">
-                    <pre style="background-color: rgba(0,0,0,0.1); padding: 10px; border-radius: 4px; white-space: pre-wrap; word-break: break-word; color: white;">${codeImplementation}</pre>
+                    <pre style="background-color: rgba(0,0,0,0.1); padding: calc(10px * var(--total-scale-factor, 1)); border-radius: calc(4px * var(--total-scale-factor, 1)); white-space: pre-wrap; word-break: break-word; color: white;">${codeImplementation}</pre>
                     <button class="copy-button">Copy to Clipboard</button>
                   </div>
                 `);
@@ -1573,9 +1573,9 @@ function initializeArxivInfo(pdfDocument) {
               } catch (error) {
                 console.error("Error loading code implementation:", error);
                 codeContentDiv.html(`
-                  <div style="text-align: center; padding: 20px; background: rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 5px; color: white;">
-                    <div style="margin-bottom: 15px;">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <div style="text-align: center; padding: calc(20px * var(--total-scale-factor, 1)); background: rgba(0,0,0,0.1); border: calc(1px * var(--total-scale-factor, 1)) solid rgba(255,255,255,0.2); border-radius: calc(5px * var(--total-scale-factor, 1)); color: white;">
+                    <div style="margin-bottom: calc(15px * var(--total-scale-factor, 1));">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="calc(24px * var(--total-scale-factor, 1))" height="calc(24px * var(--total-scale-factor, 1))" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10"></circle>
                         <line x1="12" y1="8" x2="12" y2="12"></line>
                         <line x1="12" y1="16" x2="12.01" y2="16"></line>
