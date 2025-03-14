@@ -986,15 +986,17 @@ function initializeArxivInfo(pdfDocument) {
             .arxiv-link {
               display: inline-flex;
               align-items: center;
+              justify-content: center;
+              // padding: calc(14px * var(--total-scale-factor, 1)) calc(14px * var(--total-scale-factor, 1));
               vertical-align: middle;
               margin-left: 8px;
               margin-bottom: 0;
               position: relative;
-              top: -1px;
+              height: calc(14px * var(--total-scale-factor, 1));
             }
             .arxiv-link img {
-              width: 14px;
-              height: 14px;
+              width: calc(14px * var(--total-scale-factor, 1));
+              height: calc(14px * var(--total-scale-factor, 1));
               transition: transform 0.2s ease;
             }
             .arxiv-link:hover img {
@@ -1156,7 +1158,7 @@ function initializeArxivInfo(pdfDocument) {
                 <div class="arxiv-main-content"> 
                   <div style="display: flex; align-items: center;">
                     <span class="arxiv-title" style="font-family: 'Solway', serif;font-size: calc(12px * var(--total-scale-factor, 1));">${fullTitle}</span>
-                    <a href="${link}" title="View paper on arXiv" target="_blank" class="arxiv-link" aria-label="View paper on arXiv"><img src="images/link-icon.svg" alt="External link to arXiv paper" width="14" height="14"/></a>
+                    <a href="${link}" title="View paper on arXiv" target="_blank" class="arxiv-link" aria-label="View paper on arXiv"><img src="images/link-icon.svg" alt="External link to arXiv paper" width="calc(14px * var(--total-scale-factor, 1))" height="calc(14px * var(--total-scale-factor, 1))"/></a>
                   </div>
                   <div class="arxiv-info-row">
                     <div class="arxiv_info_author" style="font-family: 'Solway', serif;">${authorText}</div>
@@ -1184,7 +1186,7 @@ function initializeArxivInfo(pdfDocument) {
                 <div class="arxiv-main-content">
                   <div style="display: flex; align-items: center;">
                     <span class="arxiv-title" style="font-family: 'Solway', serif;font-size: calc(12px * var(--total-scale-factor, 1));">${fullTitle}</span>
-                    <a href="${link}" title="View paper on arXiv" target="_blank" class="arxiv-link" aria-label="View paper on arXiv"><img src="images/link-icon.svg" alt="External link to arXiv paper" width="14" height="14"/></a>
+                    <a href="${link}" title="View paper on arXiv" target="_blank" class="arxiv-link" aria-label="View paper on arXiv"><img src="images/link-icon.svg" alt="External link to arXiv paper" width="calc(14px * var(--total-scale-factor, 1))" height="calc(14px * var(--total-scale-factor, 1))"/></a>
                   </div>
                   <div class="arxiv-info-row">
                     <div class="arxiv_info_author" style="font-family: 'Solway', serif;">${authorText}</div>
