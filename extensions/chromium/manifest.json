@@ -1,9 +1,9 @@
 {
   "minimum_chrome_version": "103",
   "manifest_version": 3,
-  "name": "PDF Viewer",
-  "version": "PDFJSSCRIPT_VERSION",
-  "description": "Uses HTML5 to display PDF files directly in the browser.",
+  "name": "Alice",
+  "version": "0.0.1",
+  "description": "Alice is a Chrome Extension to supercharge your literature review, making research accessible to all.",
   "icons": {
     "128": "icon128.png",
     "48": "icon48.png",
@@ -17,10 +17,18 @@
     "webNavigation",
     "storage"
   ],
-  "host_permissions": ["<all_urls>"],
+  "host_permissions": [
+    "https://arxiv.org/pdf/*",
+    "https://biorxiv.org/content/*",
+    "https://www.biorxiv.org/content/*"
+  ],
   "content_scripts": [
     {
-      "matches": ["http://*/*", "https://*/*", "file://*/*"],
+      "matches": [
+        "https://arxiv.org/pdf/*",
+        "https://biorxiv.org/content/*",
+        "https://www.biorxiv.org/content/*"
+      ],
       "run_at": "document_start",
       "all_frames": true,
       "css": ["contentstyle.css"],
@@ -44,17 +52,13 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "content/web/viewer.html",
-        "http:/*",
-        "https:/*",
-        "file:/*",
-        "chrome-extension:/*",
-        "blob:*",
-        "data:*",
-        "filesystem:/*",
-        "drive:*"
+        "content/web/viewer.html"
       ],
-      "matches": ["<all_urls>"],
+      "matches": [
+        "*://arxiv.org/*",
+        "*://biorxiv.org/*", 
+        "*://www.biorxiv.org/*"
+      ],
       "extension_ids": ["*"]
     }
   ]
