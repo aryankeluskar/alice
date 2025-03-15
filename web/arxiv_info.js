@@ -338,9 +338,18 @@ function initializeArxivInfo(pdfDocument) {
         const scaleFactor = computedStyle.getPropertyValue('--total-scale-factor') || "1";
         currentScaleFactor = parseFloat(scaleFactor);
         
-        // We don't need to set this as PDF.js already sets it on the page
+        // Calculate a more conservative scale factor for spacing
+        // This formula ensures that spacing scales more gradually than elements
+        // At scale 1, space-scale-factor = 1
+        // At larger/smaller scales, space-scale-factor changes more conservatively
+        const spaceScaleFactor = currentScaleFactor * 0.7 + 0.3;
+        
+        // Apply the space scale factor as a CSS variable
+        document.documentElement.style.setProperty('--space-scale-factor', spaceScaleFactor);
+        
+        // We don't need to set the total-scale-factor as PDF.js already sets it on the page
         // We just need to make sure our popup is aware of it
-        console.log("Current scale factor:", currentScaleFactor);
+        console.log("Current scale factor:", currentScaleFactor, "Space scale factor:", spaceScaleFactor);
       }
     } catch (err) {
       console.error("Error updating scale factor:", err);
@@ -892,8 +901,8 @@ function initializeArxivInfo(pdfDocument) {
           style.textContent = `
             .alice-toggle {
               display: inline-block;
-              padding: calc(4px * var(--total-scale-factor, 1)) calc(8px * var(--total-scale-factor, 1));
-              margin: 0 0 calc(5px * var(--total-scale-factor, 1)) 0;
+              padding: calc(4px * var(--space-scale-factor)) calc(8px * var(--space-scale-factor));
+              margin-bottom: calc(5px * var(--space-scale-factor));
               background-color: #C0A9FF;
               color: #555;
               border: calc(1px * var(--total-scale-factor, 1)) solid #ddd;
@@ -904,7 +913,8 @@ function initializeArxivInfo(pdfDocument) {
               font-weight: 500;
               text-align: center;
               min-width: calc(70px * var(--total-scale-factor, 1));
-              width: 100%;
+              line-height: calc(20px * var(--total-scale-factor, 1));
+              height: auto;
             }
             .alice-toggle:hover {
               background-color: #e0e0e0;
@@ -920,61 +930,59 @@ function initializeArxivInfo(pdfDocument) {
               box-shadow: 0 calc(1px * var(--total-scale-factor, 1)) calc(3px * var(--total-scale-factor, 1)) rgba(0,0,0,0.2);
             }
             .markdown-content h1, .markdown-content h2, .markdown-content h3 {
-              margin-top: calc(0.5em * var(--total-scale-factor, 1));
-              margin-bottom: calc(0.5em * var(--total-scale-factor, 1));
+              margin-top: calc(0.5em * var(--space-scale-factor));
+              margin-bottom: calc(0.5em * var(--space-scale-factor));
             }
             .markdown-content p {
-              margin-top: calc(0.3em * var(--total-scale-factor, 1));
-              margin-bottom: calc(0.3em * var(--total-scale-factor, 1));
+              margin-top: calc(0.3em * var(--space-scale-factor));
+              margin-bottom: calc(0.3em * var(--space-scale-factor));
             }
             .markdown-content ul, .markdown-content ol {
-              padding-left: calc(1.5em * var(--total-scale-factor, 1));
-              margin-top: calc(0.3em * var(--total-scale-factor, 1));
-              margin-bottom: calc(0.3em * var(--total-scale-factor, 1));
+              padding-left: calc(1.5em * var(--space-scale-factor));
+              margin-top: calc(0.3em * var(--space-scale-factor));
+              margin-bottom: calc(0.3em * var(--space-scale-factor));
             }
             .markdown-content blockquote {
               margin-left: 0;
-              padding-left: calc(1em * var(--total-scale-factor, 1));
+              padding-left: calc(1em * var(--space-scale-factor));
               border-left: calc(3px * var(--total-scale-factor, 1)) solid #ccc;
               color: #555;
             }
             .markdown-content code {
-              padding: calc(2px * var(--total-scale-factor, 1)) calc(4px * var(--total-scale-factor, 1));
+              padding: calc(2px * var(--space-scale-factor)) calc(4px * var(--space-scale-factor));
               border-radius: calc(3px * var(--total-scale-factor, 1));
               font-family: monospace;
             }
             .markdown-content pre code {
               display: block;
-              padding: calc(0.5em * var(--total-scale-factor, 1));
+              padding: calc(0.5em * var(--space-scale-factor));
               overflow-x: auto;
             }
             .concise-summary {
-              padding-top: calc(0.5em * var(--total-scale-factor, 1));
+              padding-top: calc(0.5em * var(--space-scale-factor));
             }
             .main-points {
-              margin-bottom: calc(0.5em * var(--total-scale-factor, 1));
+              margin-bottom: calc(0.5em * var(--space-scale-factor));
             }
             .tipsy-inner {
-              padding: calc(8px * var(--total-scale-factor, 1)) calc(8px * var(--total-scale-factor, 1));
+              padding: calc(8px * var(--space-scale-factor));
             }
             .arxiv-header {
-              margin-bottom: calc(10px * var(--total-scale-factor, 1));
-              border-bottom: calc(1px * var(--total-scale-factor, 1)) solid #000;
-              padding-bottom: calc(10px * var(--total-scale-factor, 1));
               position: relative;
             }
             .arxiv-main-content {
               flex: 1;
-              padding-right: calc(15px * var(--total-scale-factor, 1));
+              padding-right: calc(15px * var(--space-scale-factor));
             }
             .arxiv-title-row {
               display: flex;
               flex-direction: row;
               justify-content: space-between;
+              gap: calc(8px * var(--space-scale-factor));
             }
             .arxiv-title {
               flex: 1;
-              margin-right: calc(15px * var(--total-scale-factor, 1));
+              margin-right: calc(5px * var(--space-scale-factor));
             }
             .arxiv-controls {
               display: flex;
@@ -982,14 +990,14 @@ function initializeArxivInfo(pdfDocument) {
               align-items: flex-end;
               white-space: nowrap;
               width: calc(80px * var(--total-scale-factor, 1));
+              gap: calc(5px * var(--space-scale-factor));
             }
             .arxiv-link {
               display: inline-flex;
               align-items: center;
               justify-content: center;
-              padding: calc(4px * var(--total-scale-factor, 1)) calc(4px * var(--total-scale-factor, 1));
+              padding: calc(4px * var(--space-scale-factor));
               vertical-align: middle;
-              margin-left: calc(8px * var(--total-scale-factor, 1));
               margin-bottom: 0;
               position: relative;
               height: calc(14px * var(--total-scale-factor, 1));
@@ -1009,6 +1017,7 @@ function initializeArxivInfo(pdfDocument) {
             .arxiv-info-row {
               display: flex;
               flex-direction: column;
+              gap: calc(4px * var(--space-scale-factor));
             }
             .arxiv-info-left {
               flex: 1;
@@ -1016,21 +1025,21 @@ function initializeArxivInfo(pdfDocument) {
             .code-implementation {
               max-height: calc(400px * var(--total-scale-factor, 1));
               overflow-y: auto;
-              padding-right: calc(10px * var(--total-scale-factor, 1));
+              padding-right: calc(10px * var(--space-scale-factor));
             }
             .code-content {
-              margin-bottom: calc(15px * var(--total-scale-factor, 1));
+              margin-bottom: calc(15px * var(--space-scale-factor));
             }
             .copy-button {
               background-color: #C0A9FF;
               color: #555;
               border: calc(1px * var(--total-scale-factor, 1)) solid #ddd;
               border-radius: calc(4px * var(--total-scale-factor, 1));
-              padding: calc(6px * var(--total-scale-factor, 1)) calc(12px * var(--total-scale-factor, 1));
+              padding: calc(6px * var(--space-scale-factor)) calc(12px * var(--space-scale-factor));
               cursor: pointer;
               transition: all 0.2s ease;
               font-weight: 500;
-              margin-top: calc(12px * var(--total-scale-factor, 1));
+              margin-top: calc(12px * var(--space-scale-factor));
               display: block;
               text-align: center;
               width: 100%;
@@ -1044,21 +1053,22 @@ function initializeArxivInfo(pdfDocument) {
             .section-nav {
               display: flex;
               overflow-x: auto;
-              margin-bottom: calc(10px * var(--total-scale-factor, 1));
+              margin-bottom: calc(10px * var(--space-scale-factor));
               white-space: nowrap;
               -ms-overflow-style: none;
               scrollbar-width: none;
+              gap: calc(5px * var(--space-scale-factor));
             }
             .section-nav::-webkit-scrollbar {
               display: none;
             }
             .section-button {
-              padding: calc(3px * var(--total-scale-factor, 1)) calc(8px * var(--total-scale-factor, 1));
+              padding: calc(3px * var(--space-scale-factor)) calc(8px * var(--space-scale-factor));
               background-color: #f0f0f0;
               color: #333;
               border: calc(1px * var(--total-scale-factor, 1)) solid #ddd;
               border-radius: calc(12px * var(--total-scale-factor, 1));
-              margin-right: calc(5px * var(--total-scale-factor, 1));
+              margin-right: calc(5px * var(--space-scale-factor));
               font-size: calc(10px * var(--total-scale-factor, 1));
               cursor: pointer;
               transition: all 0.2s ease;
@@ -1068,7 +1078,7 @@ function initializeArxivInfo(pdfDocument) {
             }
             .loading-container {
               text-align: center;
-              padding: calc(20px * var(--total-scale-factor, 1));
+              padding: calc(20px * var(--space-scale-factor));
             }
             .loading-animation {
               display: inline-block;
@@ -1081,8 +1091,8 @@ function initializeArxivInfo(pdfDocument) {
               animation: spin 1s ease-in-out infinite;
             }
             .clipboard-notice {
-              margin-top: calc(15px * var(--total-scale-factor, 1));
-              padding: calc(10px * var(--total-scale-factor, 1));
+              margin-top: calc(15px * var(--space-scale-factor));
+              padding: calc(10px * var(--space-scale-factor));
               background-color: #EFF8FF;
               border: calc(1px * var(--total-scale-factor, 1)) solid #BDE3FF;
               border-radius: calc(5px * var(--total-scale-factor, 1));
@@ -1098,15 +1108,15 @@ function initializeArxivInfo(pdfDocument) {
             .clipboard-notice .clipboard-code {
               font-family: monospace;
               background: #e0e0e0;
-              padding: calc(2px * var(--total-scale-factor, 1)) calc(5px * var(--total-scale-factor, 1));
+              padding: calc(2px * var(--space-scale-factor)) calc(5px * var(--space-scale-factor));
               border-radius: calc(3px * var(--total-scale-factor, 1));
               color: #333;
               font-weight: 500;
             }
             .open-clipboard-button {
               display: block;
-              margin: calc(10px * var(--total-scale-factor, 1)) auto 0;
-              padding: calc(6px * var(--total-scale-factor, 1)) calc(12px * var(--total-scale-factor, 1));
+              margin: calc(10px * var(--space-scale-factor)) auto 0;
+              padding: calc(6px * var(--space-scale-factor)) calc(12px * var(--space-scale-factor));
               background-color: #1E88E5;
               color: white;
               border: none;
@@ -1127,7 +1137,7 @@ function initializeArxivInfo(pdfDocument) {
               }
             }
             .loading-text {
-              margin-top: calc(10px * var(--total-scale-factor, 1));
+              margin-top: calc(10px * var(--space-scale-factor));
               font-family: 'Solway', serif;
               color: #555;
             }
@@ -1148,17 +1158,17 @@ function initializeArxivInfo(pdfDocument) {
         const htmlString = `
           <div id="${popupId}" class="tipsy tipsy-${tipsyDirection}" style="font-family: 'Solway', serif;">
           <div class="tipsy-arrow"></div>
-          <div class="tipsy-inner" style="font-family: 'Solway', serif;">
+          <div class="tipsy-inner" style="font-family: 'Solway', serif; padding: 15px;">
           ${
             tipsyDirection.startsWith("n")
               ? `
             <!-- Header at top for north orientations -->
-            <div class="arxiv-header">
+            <div class="arxiv-header" style="margin-top: 10px; margin-bottom: 10px; ">
               <div class="arxiv-title-row">
                 <div class="arxiv-main-content"> 
-                  <div style="display: flex; align-items: center;">
+                  <div style="display: flex; align-items: center; gap: calc(10px * var(--space-scale-factor));">
                     <span class="arxiv-title" style="font-family: 'Solway', serif;font-size: calc(12px * var(--total-scale-factor, 1));">${fullTitle}</span>
-                    <a href="${link}" title="View paper on arXiv" target="_blank" class="arxiv-link" aria-label="View paper on arXiv"><img src="images/link-icon.svg" alt="External link to arXiv paper" width="calc(14px * var(--total-scale-factor, 1))" height="calc(14px * var(--total-scale-factor, 1))"/></a>
+                    <a href="${link}" title="View paper on arXiv" target="_blank" class="arxiv-link" aria-label="View paper on arXiv" style="display: inline-flex; align-items: center;"><img src="images/link-icon.svg" alt="External link to arXiv paper" width="calc(14px * var(--total-scale-factor, 1))" height="calc(14px * var(--total-scale-factor, 1))" style="margin-left: calc(5px * var(--space-scale-factor));"/></a>
                   </div>
                   <div class="arxiv-info-row">
                     <div class="arxiv_info_author" style="font-family: 'Solway', serif;">${authorText}</div>
@@ -1166,8 +1176,8 @@ function initializeArxivInfo(pdfDocument) {
                   </div>
                 </div>
                 <div class="arxiv-controls">
-                  <button class="alice-toggle" data-view="abstract">Summary</button>
-                  <button class="alice-toggle" data-view="code">Code</button>
+                  <button class="alice-toggle" style="margin-bottom: 5px; vertical-align: middle;" data-view="abstract">Summary</button>
+                  <button class="alice-toggle" style="margin-bottom: 10px; vertical-align: middle;" data-view="code">Code</button>
                 </div>
               </div>
             </div>
@@ -1181,10 +1191,10 @@ function initializeArxivInfo(pdfDocument) {
               <div class="arxiv_info_abstract markdown-content" style="font-family: 'Solway', serif;">${abstract}</div>
             </div>
             
-            <div class="arxiv-header" style="margin-top: calc(10px * var(--total-scale-factor, 1)); margin-bottom: 0; border-top: calc(1px * var(--total-scale-factor, 1)) solid #000; border-bottom: none; padding-top: calc(10px * var(--total-scale-factor, 1)); padding-bottom: 0;">
+            <div class="arxiv-header" style="margin-top: 10px; margin-bottom: 10px; ">
               <div class="arxiv-title-row">
                 <div class="arxiv-main-content">
-                  <div style="display: flex; align-items: center;">
+                  <div style="display: flex; align-items: center; gap: calc(10px * var(--space-scale-factor));">
                     <span class="arxiv-title" style="font-family: 'Solway', serif;font-size: calc(12px * var(--total-scale-factor, 1));">${fullTitle}</span>
                     <a href="${link}" title="View paper on arXiv" target="_blank" class="arxiv-link" aria-label="View paper on arXiv"><img src="images/link-icon.svg" alt="External link to arXiv paper" width="calc(14px * var(--total-scale-factor, 1))" height="calc(14px * var(--total-scale-factor, 1))"/></a>
                   </div>
@@ -1194,8 +1204,8 @@ function initializeArxivInfo(pdfDocument) {
                   </div>
                 </div>
                 <div class="arxiv-controls">
-                  <button class="alice-toggle" data-view="abstract">Summary</button>
-                  <button class="alice-toggle" data-view="code">Code</button>
+                  <button class="alice-toggle" style="margin-bottom: 5px; vertical-align: middle;" data-view="abstract">Summary</button>
+                  <button class="alice-toggle" style="margin-bottom: 10px; vertical-align: middle;" data-view="code">Code</button>
                 </div>
               </div>
             </div>
