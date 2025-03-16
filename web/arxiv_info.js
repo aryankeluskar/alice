@@ -909,7 +909,7 @@ function initializeArxivInfo(pdfDocument) {
               padding: calc(4px * var(--space-scale-factor)) calc(8px * var(--space-scale-factor));
               margin-bottom: calc(5px * var(--space-scale-factor));
               background-color: #C0A9FF;
-              color: #555;
+              color: #333;
               border: calc(1px * var(--total-scale-factor, 1)) solid #ddd;
               border-radius: calc(4px * var(--total-scale-factor, 1));
               font-size: calc(10px * var(--total-scale-factor, 1));
@@ -1263,13 +1263,6 @@ function initializeArxivInfo(pdfDocument) {
         let isButtonClicked = false;
         let showingSummary = false;
 
-        // Add .active class to the abstract button by default
-        $(`#${popupId} .alice-toggle[data-view="abstract"]`).addClass("active");
-
-        // Create a more robust mouseleave detection
-        let isMouseOverPopup = false;
-        let isMouseOverLink = false;
-        
         // Add hover state tracking for the popup
         $popup.on({
           mouseenter: function() {
@@ -1643,184 +1636,184 @@ function initializeArxivInfo(pdfDocument) {
               return;
             }
 
-            // Set all buttons to inactive
-            $(this)
-              .closest(".arxiv-controls")
-              .find(".alice-toggle")
-              .removeClass("active");
-
-            // Reset the Code button if it was active
-            const codeButton = $(this)
-              .closest(".arxiv-controls")
-              .find(".alice-toggle[data-view='code']");
-            codeButton.removeClass("active");
-
-            const contentDiv = $(this)
-              .closest(".tipsy-inner")
-              .find(".arxiv_info_content");
-            const abstractDiv = contentDiv.find(".arxiv_info_abstract");
+            // Toggle active state based on current view
             const currentView = $(this).attr("data-view");
-
             if (currentView === "abstract") {
               // Switch to AI summary
               $(this).attr("data-view", "summary");
               $(this).text("‎Abstract‎");
               $(this).addClass("active");
-
-              // Hide code content if visible
-              $(`#${popupId}-code-content`).hide();
-              $(`#${popupId}-abstract-content`).show();
-
-              if (!summaryLoaded) {
-                // Show loading indicator immediately
-                isProcessing = true;
-                abstractDiv.html("<div>Fetching AI summary...</div>");
-
-                try {
-                  // Only fetch the summary when the button is clicked
-                  let arxivText;
-                  try {
-                    // Define arxivEndpoint using the arXiv link from the paper
-                    const arxivEndpoint = link;
-
-                    // Extract the arXiv ID from the link
-                    const arxivIdMatch = arxivEndpoint.match(/abs\/([^\/]+)/);
-                    let arxivId = null;
-
-                    if (arxivIdMatch && arxivIdMatch[1]) {
-                      arxivId = arxivIdMatch[1];
-                      console.log("Extracted arXiv ID:", arxivId);
-
-                      // Use ArXiv API instead of direct fetch to avoid CORS issues
-                      const apiEndpoint = `http://export.arxiv.org/api/query?id_list=${arxivId}`;
-                      console.log("Using ArXiv API endpoint:", apiEndpoint);
-
-                      const apiResponse = await fetchWithRetry(
-                        apiEndpoint,
-                        {},
-                        2
-                      );
-
-                      const xmlData = await apiResponse.text();
-                      const parser = new DOMParser();
-                      const xmlDoc = parser.parseFromString(
-                        xmlData,
-                        "text/xml"
-                      );
-
-                      // Extract summary and other info from the XML
-                      const summary =
-                        xmlDoc.querySelector("summary")?.textContent || "";
-                      const title =
-                        xmlDoc.querySelector("title")?.textContent || "";
-                      const authors = Array.from(
-                        xmlDoc.querySelectorAll("author name")
-                      )
-                        .map(el => el.textContent)
-                        .join(", ");
-
-                      // Combine metadata and abstract for the AI to summarize
-                      arxivText = `Title: ${title}\nAuthors: ${authors}\n\nAbstract: ${summary}`;
-                      console.log(
-                        "Successfully extracted paper data from ArXiv API"
-                      );
-                    } else {
-                      // If we can't extract the ID, try using a CORS proxy as fallback
-                      console.log(
-                        "Could not extract arXiv ID, using fallback method"
-                      );
-                      throw new Error("Could not extract arXiv ID from link");
-                    }
-                  } catch (error) {
-                    console.error("Error fetching from ArXiv:", error);
-                    throw new Error(
-                      `Failed to fetch article from arXiv: ${error.message}. ArXiv blocks direct content access due to CORS restrictions.`
-                    );
-                  }
-
-                  // Call Gemini API instead of OpenAI
-                  try {
-                    let geminiResult;
-                    let retryCount = 0;
-                    let llmSummaryContent = "";
-                    let containsCode = false;
-
-                    do {
-                      // If this is a retry, show that we're retrying
-                      if (retryCount > 0) {
-                        abstractDiv.html(
-                          `<div>Retry ${retryCount}/3: Improving summary format...</div>`
-                        );
-                      }
-
-                      geminiResult = await callGeminiAPI(arxivText, retryCount);
-                      console.log(
-                        `Gemini API response (attempt ${retryCount + 1}):`,
-                        geminiResult
-                      );
-
-                      // Process response
-                      llmSummaryContent = await processGeminiResponse(
-                        geminiResult
-                      );
-
-                      // Check if we still have Python code
-                      containsCode = containsPythonCode(llmSummaryContent);
-
-                      if (containsCode) {
-                        console.log(
-                          `Detected code in response, retry ${retryCount + 1}`
-                        );
-                        retryCount++;
-                      }
-                    } while (containsCode && retryCount < 3);
-
-                    // If we still have code after retries, do our best to clean it
-                    if (containsCode) {
-                      llmSummaryContent =
-                        cleanupCodeFromResponse(llmSummaryContent);
-                    }
-
-                    llmSummary = llmSummaryContent;
-
-                    // Ensure the summary doesn't have AI introduction text
-                    if (
-                      typeof llmSummary === "string" &&
-                      !llmSummary.startsWith('<div class="main-points">')
-                    ) {
-                      llmSummary = cleanAIIntroText(llmSummary);
-                    }
-
-                    summaryLoaded = true;
-
-                    // Update content with summary
-                    abstractDiv.html(llmSummary);
-                  } catch (error) {
-                    if (error.message.includes("429")) {
-                      throw new Error(
-                        "AI summary service is currently busy. Please try again in a few minutes."
-                      );
-                    } else {
-                      throw error;
-                    }
-                  }
-                } catch (error) {
-                  console.error("Error generating summary:", error);
-                  abstractDiv.html(
-                    `<div style="color: red;">Error: ${error.message}</div>`
-                  );
-                } finally {
-                  isProcessing = false;
-                }
-              } else {
-                // Summary already loaded, just show it
-                abstractDiv.html(llmSummary);
-              }
+              showingSummary = true;
             } else {
               // Switch back to original abstract
               $(this).attr("data-view", "abstract");
               $(this).text("Summary");
-              $(this).addClass("active");
+              $(this).removeClass("active");
+              showingSummary = false;
+            }
+
+            // Set all other buttons to inactive
+            $(this)
+              .closest(".arxiv-controls")
+              .find(".alice-toggle")
+              .not(this)
+              .removeClass("active");
+
+            const contentDiv = $(this)
+              .closest(".tipsy-inner")
+              .find(".arxiv_info_content");
+            const abstractDiv = contentDiv.find(".arxiv_info_abstract");
+
+            // Hide code content if visible
+            $(`#${popupId}-code-content`).hide();
+            $(`#${popupId}-abstract-content`).show();
+
+            if (showingSummary && !summaryLoaded) {
+              // Show loading indicator immediately
+              isProcessing = true;
+              abstractDiv.html("<div>Fetching AI summary...</div>");
+
+              try {
+                // Only fetch the summary when the button is clicked
+                let arxivText;
+                try {
+                  // Define arxivEndpoint using the arXiv link from the paper
+                  const arxivEndpoint = link;
+
+                  // Extract the arXiv ID from the link
+                  const arxivIdMatch = arxivEndpoint.match(/abs\/([^\/]+)/);
+                  let arxivId = null;
+
+                  if (arxivIdMatch && arxivIdMatch[1]) {
+                    arxivId = arxivIdMatch[1];
+                    console.log("Extracted arXiv ID:", arxivId);
+
+                    // Use ArXiv API instead of direct fetch to avoid CORS issues
+                    const apiEndpoint = `http://export.arxiv.org/api/query?id_list=${arxivId}`;
+                    console.log("Using ArXiv API endpoint:", apiEndpoint);
+
+                    const apiResponse = await fetchWithRetry(
+                      apiEndpoint,
+                      {},
+                      2
+                    );
+
+                    const xmlData = await apiResponse.text();
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(
+                      xmlData,
+                      "text/xml"
+                    );
+
+                    // Extract summary and other info from the XML
+                    const summary =
+                      xmlDoc.querySelector("summary")?.textContent || "";
+                    const title =
+                      xmlDoc.querySelector("title")?.textContent || "";
+                    const authors = Array.from(
+                      xmlDoc.querySelectorAll("author name")
+                    )
+                      .map(el => el.textContent)
+                      .join(", ");
+
+                    // Combine metadata and abstract for the AI to summarize
+                    arxivText = `Title: ${title}\nAuthors: ${authors}\n\nAbstract: ${summary}`;
+                    console.log(
+                      "Successfully extracted paper data from ArXiv API"
+                    );
+                  } else {
+                    // If we can't extract the ID, try using a CORS proxy as fallback
+                    console.log(
+                      "Could not extract arXiv ID, using fallback method"
+                    );
+                    throw new Error("Could not extract arXiv ID from link");
+                  }
+                } catch (error) {
+                  console.error("Error fetching from ArXiv:", error);
+                  throw new Error(
+                    `Failed to fetch article from arXiv: ${error.message}. ArXiv blocks direct content access due to CORS restrictions.`
+                  );
+                }
+
+                // Call Gemini API instead of OpenAI
+                try {
+                  let geminiResult;
+                  let retryCount = 0;
+                  let llmSummaryContent = "";
+                  let containsCode = false;
+
+                  do {
+                    // If this is a retry, show that we're retrying
+                    if (retryCount > 0) {
+                      abstractDiv.html(
+                        `<div>Retry ${retryCount}/3: Improving summary format...</div>`
+                      );
+                    }
+
+                    geminiResult = await callGeminiAPI(arxivText, retryCount);
+                    console.log(
+                      `Gemini API response (attempt ${retryCount + 1}):`,
+                      geminiResult
+                    );
+
+                    // Process response
+                    llmSummaryContent = await processGeminiResponse(
+                      geminiResult
+                    );
+
+                    // Check if we still have Python code
+                    containsCode = containsPythonCode(llmSummaryContent);
+
+                    if (containsCode) {
+                      console.log(
+                        `Detected code in response, retry ${retryCount + 1}`
+                      );
+                      retryCount++;
+                    }
+                  } while (containsCode && retryCount < 3);
+
+                  // If we still have code after retries, do our best to clean it
+                  if (containsCode) {
+                    llmSummaryContent =
+                      cleanupCodeFromResponse(llmSummaryContent);
+                  }
+
+                  llmSummary = llmSummaryContent;
+
+                  // Ensure the summary doesn't have AI introduction text
+                  if (
+                    typeof llmSummary === "string" &&
+                    !llmSummary.startsWith('<div class="main-points">')
+                  ) {
+                    llmSummary = cleanAIIntroText(llmSummary);
+                  }
+
+                  summaryLoaded = true;
+
+                  // Update content with summary
+                  abstractDiv.html(llmSummary);
+                } catch (error) {
+                  if (error.message.includes("429")) {
+                    throw new Error(
+                      "AI summary service is currently busy. Please try again in a few minutes."
+                    );
+                  } else {
+                    throw error;
+                  }
+                }
+              } catch (error) {
+                console.error("Error generating summary:", error);
+                abstractDiv.html(
+                  `<div style="color: red;">Error: ${error.message}</div>`
+                );
+              } finally {
+                isProcessing = false;
+              }
+            } else if (showingSummary && summaryLoaded) {
+              // Summary already loaded, just show it
+              abstractDiv.html(llmSummary);
+            } else {
+              // Show original abstract when toggling back
               abstractDiv.html(abstract);
             }
           }
