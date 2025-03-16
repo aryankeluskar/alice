@@ -317,6 +317,10 @@ function initializeArxivInfo(pdfDocument) {
   // jQuery is available, proceed with initialization
   console.log("Initializing ArXiv info with jQuery available");
   
+  // Initialize mouse tracking variables
+  let isMouseOverLink = false;
+  let isMouseOverPopup = false;
+  
   // current implementation calls this upon every viewer render,
   // so turn off callback before adding another one
   $("a").off();
