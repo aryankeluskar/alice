@@ -466,10 +466,6 @@ function initializeArxivInfo(pdfDocument) {
         console.log(`Citation popup failed: ${reason}`, $(el).attr("href"));
         // Store the reason on the element for reference
         $(el).data("failReason", reason);
-
-        // Show popup with error message
-        const popup = $(`<div class="citation-popup">${reason}</div>`);
-        $(this).after(popup);
       }
 
       const linkHref = $(this).attr("href");
