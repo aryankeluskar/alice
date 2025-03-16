@@ -970,7 +970,6 @@ function initializeArxivInfo(pdfDocument) {
               margin-bottom: calc(0.5em * var(--space-scale-factor));
             }
             .tipsy-inner {
-              padding: calc(8px * var(--space-scale-factor));
               user-select: text;
             }
             .arxiv-header {
@@ -1197,12 +1196,12 @@ function initializeArxivInfo(pdfDocument) {
         const htmlString = `
           <div id="${popupId}" class="tipsy tipsy-${tipsyDirection}" style="font-family: 'Solway', serif;">
           <div class="tipsy-arrow"></div>
-          <div class="tipsy-inner" style="font-family: 'Solway', serif; padding: 15px;">
+          <div class="tipsy-inner" style="font-family: 'Solway', serif; padding: calc(10px * var(--total-scale-factor, 1));">
           ${
             tipsyDirection.startsWith("n")
               ? `
             <!-- Header at top for north orientations -->
-            <div class="arxiv-header" style="margin-top: 10px; margin-bottom: 10px; ">
+            <div class="arxiv-header" style="margin-bottom: 10px; ">
               <div class="arxiv-title-row">
                 <div class="arxiv-main-content"> 
                   <div style="display: flex; align-items: center; gap: calc(10px * var(--space-scale-factor));">
@@ -1230,7 +1229,7 @@ function initializeArxivInfo(pdfDocument) {
               <div class="arxiv_info_abstract markdown-content" style="font-family: 'Solway', serif;">${abstract}</div>
             </div>
             
-            <div class="arxiv-header" style="margin-top: 10px; margin-bottom: 10px; ">
+            <div class="arxiv-header" style="margin-top: 10px;">
               <div class="arxiv-title-row">
                 <div class="arxiv-main-content">
                   <div style="display: flex; align-items: center; gap: calc(10px * var(--space-scale-factor));">
@@ -1323,11 +1322,114 @@ function initializeArxivInfo(pdfDocument) {
 
         // Function to render markdown content
         function renderMarkdown(text) {
-          if (!window.marked) {
-            console.warn("Marked library not loaded, displaying raw text");
-            return `<pre>${text}</pre>`;
+          if (!text) return '';
+          
+          // Custom markdown to HTML converter
+          function markdownToHtml(markdown) {
+            // Escape HTML
+            function escapeHtml(unsafe) {
+              return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+            }
+            
+            let html = markdown;
+            
+            // Process code blocks first (```)
+            html = html.replace(/```([^`]+)```/g, (match, p1) => {
+              return `<pre><code>${escapeHtml(p1.trim())}</code></pre>`;
+            });
+            
+            // Process inline code (`)
+            html = html.replace(/`([^`]+)`/g, (match, p1) => {
+              return `<code>${escapeHtml(p1)}</code>`;
+            });
+            
+            // Headers (# Heading)
+            html = html.replace(/^### (.*$)/gm, '<h3>$1</h3>');
+            html = html.replace(/^## (.*$)/gm, '<h2>$1</h2>');
+            html = html.replace(/^# (.*$)/gm, '<h1>$1</h1>');
+            
+            // Bold (**text**)
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            // Italic (*text*)
+            html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            
+            // Line breaks
+            html = html.replace(/\n$/gm, '<br />');
+            
+            // Unordered lists
+            html = html.replace(/^\s*[\-\*]\s+(.*$)/gm, '<li>$1</li>');
+            html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+            
+            // Ordered lists
+            html = html.replace(/^\s*\d+\.\s+(.*$)/gm, '<li>$1</li>');
+            html = html.replace(/(<li>.*<\/li>)/s, '<ol style="list-style-position: inside; padding-left: 0;">$1</ol>');
+            
+            // Blockquotes
+            html = html.replace(/^\>\s(.*$)/gm, '<blockquote>$1</blockquote>');
+            
+            // Links [text](url)
+            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+            
+            // Paragraphs - wrap any remaining newline-separated content 
+            html = html.replace(/^([^<].*[^>])$/gm, '<p>$1</p>');
+            
+            // Clean up any remaining newlines and extra paragraph tags
+            html = html.replace(/<\/p>\s*<p>/g, '</p><p>');
+            
+            return html;
           }
-          return window.marked.parse(text);
+          
+          // Function to format the main points as bulleted list
+          function formatMainPoints(mainPoints) {
+            // Convert markdown to HTML first
+            const htmlContent = markdownToHtml(mainPoints);
+            
+            // If it already has list items, just return it
+            if (htmlContent.includes('<li>')) {
+              return htmlContent;
+            }
+            
+            // Otherwise, split the content and create list items
+            const points = mainPoints.split(/\n\s*[\*\-•]\s+|\n\s*\d+\.\s+/).filter(point => point.trim());
+            
+            if (points.length === 0) {
+              // If no bullet points detected, try splitting by newlines
+              const lines = mainPoints.split('\n').filter(line => line.trim());
+              const listItems = lines.map(line => `<li style="margin-bottom: 10px; list-style-type: disc; margin-left: 20px;">${markdownToHtml(line.trim())}</li>`).join('');
+              return `<ul style="padding-left: 0; margin-top: 0;">${listItems}</ul>`;
+            }
+            
+            const listItems = points.map(point => `<li style="margin-bottom: 10px; list-style-type: disc; margin-left: 20px;">${markdownToHtml(point.trim())}</li>`).join('');
+            return `<ul style="padding-left: 0; margin-top: 0;">${listItems}</ul>`;
+          }
+          
+          // Check if the content is JSON format (from AI responses)
+          try {
+            const jsonContent = JSON.parse(text);
+            
+            if (jsonContent.mainPoints && jsonContent.conciseSummary) {
+              // Format JSON content to match the screenshot style
+              return `
+                <div style="background-color: #C0A9FF; border-radius: 8px;">
+                  <h2 style="font-size: 1.2em; font-weight: bold; margin-top: 0; margin-bottom: 15px;">Main Points</h2>
+                  ${formatMainPoints(jsonContent.mainPoints)}
+                  <div style="margin-top: 15px; font-size: 0.9em;">
+                    ${markdownToHtml(jsonContent.conciseSummary)}
+                  </div>
+                </div>
+              `;
+            }
+          } catch (e) {
+            // Not JSON, continue with normal markdown processing
+          }
+          
+          return markdownToHtml(text);
         }
 
         // Function to ensure MathJax is loaded
