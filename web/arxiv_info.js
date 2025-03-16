@@ -384,6 +384,11 @@ function initializeArxivInfo(pdfDocument) {
 
   // Add a click event on the document to close popups when clicking outside
   $(document).on('click', function(e) {
+    // If the user is selecting text, don't close the popup
+    if (window.getSelection && window.getSelection().toString().length > 0) {
+      return;
+    }
+    
     // If we have an active popup and the click is outside the popup and its trigger link
     if (activePopup && 
         !$(e.target).closest(activePopup).length && 
@@ -966,6 +971,7 @@ function initializeArxivInfo(pdfDocument) {
             }
             .tipsy-inner {
               padding: calc(8px * var(--space-scale-factor));
+              user-select: text;
             }
             .arxiv-header {
               position: relative;
@@ -973,6 +979,7 @@ function initializeArxivInfo(pdfDocument) {
             .arxiv-main-content {
               flex: 1;
               padding-right: calc(15px * var(--space-scale-factor));
+              user-select: text;
             }
             .arxiv-title-row {
               display: flex;
@@ -1141,6 +1148,38 @@ function initializeArxivInfo(pdfDocument) {
               font-family: 'Solway', serif;
               color: #555;
             }
+            .arxiv_info_content, .arxiv_info_abstract, .markdown-content, .code-implementation pre {
+              user-select: text;
+            }
+            .main-points, .concise-summary, .arxiv-title, .arxiv_info_author, .arxiv_info_date {
+              user-select: text;
+            }
+            .section-nav {
+              display: flex;
+              overflow-x: auto;
+              margin-bottom: calc(10px * var(--space-scale-factor));
+              white-space: nowrap;
+              -ms-overflow-style: none;
+              scrollbar-width: none;
+              gap: calc(5px * var(--space-scale-factor));
+            }
+            .section-nav::-webkit-scrollbar {
+              display: none;
+            }
+            .section-button {
+              padding: calc(3px * var(--space-scale-factor)) calc(8px * var(--space-scale-factor));
+              background-color: #f0f0f0;
+              color: #333;
+              border: calc(1px * var(--total-scale-factor, 1)) solid #ddd;
+              border-radius: calc(12px * var(--total-scale-factor, 1));
+              margin-right: calc(5px * var(--space-scale-factor));
+              font-size: calc(10px * var(--total-scale-factor, 1));
+              cursor: pointer;
+              transition: all 0.2s ease;
+            }
+            .section-button:hover {
+              background-color: #e0e0e0;
+            }
           `;
           document.head.appendChild(style);
         }
@@ -1242,6 +1281,15 @@ function initializeArxivInfo(pdfDocument) {
           },
           click: function(e) {
             // Prevent clicks on the popup from closing it
+            e.stopPropagation();
+          },
+          mousedown: function(e) {
+            // Allow text selection to work properly
+            // Don't stop propagation for mousedown events that might start text selection
+            if (e.target.closest('.tipsy-inner')) {
+              // Don't do anything special, allow default behavior for text selection
+              return true;
+            }
             e.stopPropagation();
           }
         });
