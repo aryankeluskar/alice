@@ -947,9 +947,29 @@ function initializeArxivInfo(pdfDocument) {
               margin-bottom: calc(0.3em * var(--space-scale-factor));
             }
             .markdown-content ul, .markdown-content ol {
-              padding-left: calc(1.5em * var(--space-scale-factor));
+              padding-left: calc(1.2em * var(--space-scale-factor));
               margin-top: calc(0.3em * var(--space-scale-factor));
               margin-bottom: calc(0.3em * var(--space-scale-factor));
+            }
+            .markdown-content li {
+              list-style-type: disc;
+              margin-bottom: calc(0.5em * var(--space-scale-factor));
+              padding-left: 0;
+              margin-left: 0;
+              text-indent: -1.2em;
+              padding-left: 1.2em;
+            }
+            .main-points ul {
+              padding-left: calc(1.2em * var(--space-scale-factor));
+              margin-top: 0;
+            }
+            .main-points li {
+              list-style-type: disc;
+              margin-bottom: calc(0.6em * var(--space-scale-factor));
+              padding-left: 0;
+              margin-left: 0;
+              text-indent: -1.2em;
+              padding-left: 1.2em;
             }
             .markdown-content blockquote {
               margin-left: 0;
@@ -972,6 +992,7 @@ function initializeArxivInfo(pdfDocument) {
             }
             .main-points {
               margin-bottom: calc(0.5em * var(--space-scale-factor));
+              margin-top: calc(1em * var(--space-scale-factor));
             }
             .tipsy-inner {
               user-select: text;
@@ -1205,7 +1226,7 @@ function initializeArxivInfo(pdfDocument) {
             tipsyDirection.startsWith("n")
               ? `
             <!-- Header at top for north orientations -->
-            <div class="arxiv-header" style="margin-bottom: 10px; ">
+            <div class="arxiv-header" style="margin-bottom: 10px; border-bottom: 2px solid #000; border-spacing: 5px;">  
               <div class="arxiv-title-row">
                 <div class="arxiv-main-content"> 
                   <div style="display: flex; align-items: center; gap: calc(10px * var(--space-scale-factor));">
@@ -1222,7 +1243,9 @@ function initializeArxivInfo(pdfDocument) {
                   <button class="alice-toggle" style="margin-bottom: 10px; vertical-align: middle;" data-view="code">Code</button>
                 </div>
               </div>
+                ‎  
             </div>
+
             <div class="arxiv_info_content" style="font-family: 'Solway', serif;">
               <div class="arxiv_info_abstract markdown-content" style="font-family: 'Solway', serif;">${abstract}</div>
             </div>
@@ -1233,8 +1256,11 @@ function initializeArxivInfo(pdfDocument) {
               <div class="arxiv_info_abstract markdown-content" style="font-family: 'Solway', serif;">${abstract}</div>
             </div>
             
-            <div class="arxiv-header" style="margin-top: 10px;">
-              <div class="arxiv-title-row">
+            <div class="arxiv-header" style="margin-top: 10px; border-top: 2px solid #000; border-spacing: 5px;">
+            
+            ‎  
+            
+            <div class="arxiv-title-row">
                 <div class="arxiv-main-content">
                   <div style="display: flex; align-items: center; gap: calc(10px * var(--space-scale-factor));">
                     <span class="arxiv-title" style="font-family: 'Solway', serif;font-size: calc(12px * var(--total-scale-factor, 1));">${fullTitle}</span>
@@ -1346,9 +1372,9 @@ function initializeArxivInfo(pdfDocument) {
             });
             
             // Headers (# Heading)
-            html = html.replace(/^### (.*$)/gm, '<h3>$1</h3>');
-            html = html.replace(/^## (.*$)/gm, '<h2>$1</h2>');
-            html = html.replace(/^# (.*$)/gm, '<h1>$1</h1>');
+            html = html.replace(/^### (.*$)/gm, '<h3 style="margin-bottom: calc(12px * var(--space-scale-factor));">$1 \n\n </h3>');
+            html = html.replace(/^## (.*$)/gm, '<h2 style="margin-bottom: calc(12px * var(--space-scale-factor));">$1 \n\n </h2>');
+            html = html.replace(/^# (.*$)/gm, '<h1 style="margin-bottom: calc(12px * var(--space-scale-factor));">$1 \n\n </h1>');
             
             // Bold (**text**)
             html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
@@ -1357,11 +1383,11 @@ function initializeArxivInfo(pdfDocument) {
             html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
             
             // Line breaks
-            html = html.replace(/\n$/gm, '<br />');
+            html = html.replace(/\n$/gm, ' <br>');
             
             // Unordered lists
             html = html.replace(/^\s*[\-\*]\s+(.*$)/gm, '<li>$1</li>');
-            html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+            html = html.replace(/(<li>.*<\/li>)/s, ' <div style="font-size: calc(5px * var(--total-scale-factor));">‎</div> <ul>$1</ul>');
             
             // Ordered lists
             html = html.replace(/^\s*\d+\.\s+(.*$)/gm, '<li>$1</li>');
@@ -1387,34 +1413,37 @@ function initializeArxivInfo(pdfDocument) {
             // Convert markdown to HTML first
             const htmlContent = markdownToHtml(mainPoints);
             
-            // If it already has list items, just return it
-            if (htmlContent.includes('<li>')) {
+            // If it already has list items with proper bullet style, just return it
+            if (htmlContent.includes('<li') && !htmlContent.includes('list-style-type: decimal')) {
               return htmlContent;
             }
             
-            // Otherwise, split the content and create list items
+            // Otherwise, split the content and create list items with bullet style
             const points = mainPoints.split(/\n\s*[\*\-•]\s+|\n\s*\d+\.\s+/).filter(point => point.trim());
             
             if (points.length === 0) {
               // If no bullet points detected, try splitting by newlines
               const lines = mainPoints.split('\n').filter(line => line.trim());
-              const listItems = lines.map(line => `<li style="margin-bottom: 10px; list-style-type: disc; margin-left: 20px;">${markdownToHtml(line.trim())}</li>`).join('');
-              return `<ul style="padding-left: 0; margin-top: 0;">${listItems}</ul>`;
+              const listItems = lines.map(line => `<li style="text-indent: -1.2em; padding-left: 1.2em; margin-bottom: 10px; list-style-type: disc; margin-left: 5px;">${markdownToHtml(line.trim())}</li>`).join('');
+              return `<ul style="padding-left: 10px; margin-top: 0;">${listItems}</ul>`;
             }
             
-            const listItems = points.map(point => `<li style="margin-bottom: 10px; list-style-type: disc; margin-left: 20px;">${markdownToHtml(point.trim())}</li>`).join('');
-            return `<ul style="padding-left: 0; margin-top: 0;">${listItems}</ul>`;
+            // Always use disc bullets for consistency
+            const listItems = points.map(point => `<li style="text-indent: -1.2em; padding-left: 1.2em; margin-bottom: 10px; list-style-type: disc; margin-left: 5px;">${markdownToHtml(point.trim())}</li>`).join('');
+            return `<ul style="padding-left: 10px; margin-top: 1em !important;">${listItems}</ul>`;
           }
           
           // Check if the content is JSON format (from AI responses)
           try {
             const jsonContent = JSON.parse(text);
+
+            console.log("JSON content:", jsonContent);
             
             if (jsonContent.mainPoints && jsonContent.conciseSummary) {
               // Format JSON content to match the screenshot style
               return `
-                <div style="background-color: #C0A9FF; border-radius: 8px;">
-                  <h2 style="font-size: 1.2em; font-weight: bold; margin-top: 0; margin-bottom: 15px;">Main Points</h2>
+                <div style="background-color: #C0A9FF; border-radius: 8px; padding: 10px;">
+                  <h2 style="font-size: 1.3em; font-weight: bold; margin-top: 0; margin-bottom: 1em !important;">Main Points:</h2>
                   ${formatMainPoints(jsonContent.mainPoints)}
                   <div style="margin-top: 15px; font-size: 0.9em;">
                     ${markdownToHtml(jsonContent.conciseSummary)}
@@ -1764,6 +1793,8 @@ function initializeArxivInfo(pdfDocument) {
                     llmSummaryContent = await processGeminiResponse(
                       geminiResult
                     );
+
+                    console.log("LLM summary content:", llmSummaryContent);
 
                     // Check if we still have Python code
                     containsCode = containsPythonCode(llmSummaryContent);
@@ -2162,7 +2193,7 @@ Your response should be comprehensive yet concise, focusing on practical impleme
             return `<div class="main-points">${cleanAIIntroText(
               renderMarkdown(args.mainPoints)
             )}</div>
-              <div class="concise-summary">${cleanAIIntroText(
+              <div class="concise-summary" style="margin-top: 15px;">${cleanAIIntroText(
                 renderMarkdown(args.conciseSummary)
               )}</div>`;
           } else {
@@ -2200,7 +2231,7 @@ Your response should be comprehensive yet concise, focusing on practical impleme
                 return `<div class="main-points">${renderMarkdown(
                   mainPoints
                 )}</div>
-                  <div class="concise-summary">${renderMarkdown(
+                  <div class="concise-summary" style="margin-top: 15px;">${renderMarkdown(
                     conciseSummary
                   )}</div>`;
               }
@@ -2234,7 +2265,7 @@ Your response should be comprehensive yet concise, focusing on practical impleme
                 return `<div class="main-points">${renderMarkdown(
                   mainPoints
                 )}</div>
-                  <div class="concise-summary">${renderMarkdown(
+                  <div class="concise-summary" style="margin-top: 15px;">${renderMarkdown(
                     conciseSummary
                   )}</div>`;
               } else {
@@ -2274,7 +2305,7 @@ Your response should be comprehensive yet concise, focusing on practical impleme
                 return `<div class="main-points">${renderMarkdown(
                   mainPoints.trim()
                 )}</div>
-                  <div class="concise-summary">${renderMarkdown(
+                  <div class="concise-summary" style="margin-top: 15px;">${renderMarkdown(
                     conciseSummary.trim()
                   )}</div>`;
               }
