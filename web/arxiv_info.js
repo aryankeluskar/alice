@@ -1240,7 +1240,8 @@ function initializeArxivInfo(pdfDocument) {
                 </div>
                 <div class="arxiv-controls">
                   <button class="alice-toggle" style="margin-bottom: 5px; vertical-align: middle;" data-view="abstract">Summary</button>
-                  <button class="alice-toggle" style="margin-bottom: 10px; vertical-align: middle;" data-view="code">Code</button>
+                  <button class="alice-toggle" style="margin-bottom: 10px; vertical-align: middle; display: none;" data-view="code">Code</button>
+                  <button class="alice-toggle" style="margin-bottom: 10px; vertical-align: middle;" data-view="bibtex">BibTex</button>
                 </div>
               </div>
                 ‎  
@@ -1273,7 +1274,8 @@ function initializeArxivInfo(pdfDocument) {
                 </div>
                 <div class="arxiv-controls">
                   <button class="alice-toggle" style="margin-bottom: 5px; vertical-align: middle;" data-view="abstract">Summary</button>
-                  <button class="alice-toggle" style="margin-bottom: 10px; vertical-align: middle;" data-view="code">Code</button>
+                  <button class="alice-toggle" style="margin-bottom: 10px; vertical-align: middle; display: none;" data-view="code">Code</button>
+                  <button class="alice-toggle" style="margin-bottom: 10px; vertical-align: middle;" data-view="bibtex">BibTex</button>
                 </div>
               </div>
             </div>
@@ -1543,7 +1545,6 @@ function initializeArxivInfo(pdfDocument) {
             systemPrompt +=
               " IMPORTANT: DO NOT return Python code or function calls in your response. DO NOT use print() or code syntax. Respond ONLY with natural language markdown content.";
           }
-
           // After 2 retries, fall back to a direct prompt instead of function calling
           if (retryCount >= 2) {
             console.log("Falling back to direct prompt after multiple retries");
@@ -2366,6 +2367,131 @@ Your response should be comprehensive yet concise, focusing on practical impleme
           return cleanedText;
         }
 
+        // Add click event listener for BibTex button
+        $(`#${popupId} .alice-toggle[data-view="bibtex"]`).on(
+          "click",
+          async function (e) {
+            e.stopPropagation();
+            e.preventDefault(); // Prevent default behavior
+            
+            console.log("BibTex button clicked");
+
+            // Mark that the button was clicked to prevent popup from closing
+            isButtonClicked = true;
+            setTimeout(() => {
+              isButtonClicked = false;
+            }, 500); // Increase timeout to prevent accidental closing
+
+            // Prevent multiple simultaneous requests
+            if (isProcessing) {
+              return;
+            }
+
+            // Toggle active state based on current state
+            const isCurrentlyActive = $(this).hasClass("active");
+            
+            if (isCurrentlyActive) {
+              // If already active, toggle back to showing the abstract
+              $(this).removeClass("active");
+              
+              // Show original abstract
+              const contentDiv = $(this)
+                .closest(".tipsy-inner")
+                .find(".arxiv_info_content");
+              const abstractDiv = contentDiv.find(".arxiv_info_abstract");
+              
+              // Reset content to original abstract
+              abstractDiv.html(abstract);
+              
+            } else {
+              // Toggle active state to show BibTex
+              $(this).addClass("active");
+
+              // Set all other buttons to inactive
+              $(this)
+                .closest(".arxiv-controls")
+                .find(".alice-toggle")
+                .not(this)
+                .removeClass("active");
+
+              const contentDiv = $(this)
+                .closest(".tipsy-inner")
+                .find(".arxiv_info_content");
+              const abstractDiv = contentDiv.find(".arxiv_info_abstract");
+
+              // Hide code content if visible
+              $(`#${popupId}-code-content`).hide();
+              $(`#${popupId}-abstract-content`).show();
+
+              // Show loading indicator immediately
+              isProcessing = true;
+              abstractDiv.html("<div>Fetching BibTex...</div>");
+
+              try {
+                // Define arxivEndpoint using the arXiv link from the paper
+                const arxivEndpoint = link;
+
+                // Extract the arXiv ID from the link
+                const arxivIdMatch = arxivEndpoint.match(/abs\/([^\/]+)/);
+                let arxivId = null;
+
+                if (arxivIdMatch && arxivIdMatch[1]) {
+                  arxivId = arxivIdMatch[1];
+                  console.log("Extracted arXiv ID for BibTex:", arxivId);
+                  
+                  // Fetch BibTex data from API
+                  const bibtexData = await fetchBibTexData(arxivId);
+                  
+                  // Display BibTex with copy button
+                  const bibtexHtml = `
+                    <div style="position: relative;">
+                      <pre style="white-space: pre-wrap; word-wrap: break-word; margin-bottom: 30px; font-family: 'Solway', serif; font-size: calc(10px * var(--total-scale-factor, 1));">${bibtexData}</pre>
+                      <button id="${popupId}-copy-bibtex" class="alice-toggle" style="position: absolute; bottom: 0; right: 0; padding-left: 10px; padding-right: 10px;">Copy to clipboard</button>
+                    </div>
+                  `;
+                  
+                  abstractDiv.html(bibtexHtml);
+                  
+                  // Add click handler for the copy button
+                  $(`#${popupId}-copy-bibtex`).on("click", function(e) {
+                    e.stopPropagation();
+                    navigator.clipboard.writeText(bibtexData)
+                      .then(() => {
+                        const originalText = $(this).text();
+                        $(this).text("Copied!");
+                        setTimeout(() => {
+                          $(this).text(originalText);
+                        }, 2000);
+                      })
+                      .catch(err => {
+                        console.error('Failed to copy text: ', err);
+                      });
+                  });
+                } else {
+                  abstractDiv.html("<div>Could not extract arXiv ID from the link.</div>");
+                }
+              } catch (error) {
+                console.error("Error fetching BibTex:", error);
+                abstractDiv.html("<div>Error fetching BibTex information.</div>");
+              } finally {
+                isProcessing = false;
+              }
+            }
+          }
+        );
+
+        // Function to fetch BibTex data from API
+        async function fetchBibTexData(arxivId) {
+          try {
+            const bibtexUrl = `https://api.aryankeluskar.com/api/bibtex?arxiv_id=${arxivId}`;
+            const response = await fetchWithRetry(bibtexUrl, {}, 3);
+            return await response.text();
+          } catch (error) {
+            console.error("Error fetching BibTex data:", error);
+            throw error;
+          }
+        }
+
         // Store the current element and popup as active
         activeLink = this;
         activePopup = $popup;
@@ -2451,4 +2577,5 @@ Note: This is a simplified implementation. In a real scenario, the code would be
 specifically generated based on the paper's algorithms and methodologies.
 `;
 }
+
 
