@@ -125,7 +125,7 @@ const ChromeCom = {
           if (isAllowedAccess) {
             callback(file);
           } else {
-            requestAccessToLocalFile(file, viewerApp.overlayManager, callback);
+            // requestAccessToLocalFile(file, viewerApp.overlayManager, callback);
           }
         });
       });
