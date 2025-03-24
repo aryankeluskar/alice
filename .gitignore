@@ -8,3 +8,5 @@ node_modules/
 examples/node/svgdump/
 examples/node/pdf2png/*.png
 .cursorignore
+build.zip
+chrome_info.txt
