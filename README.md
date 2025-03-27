@@ -5,12 +5,7 @@ Alice is a Chrome Extension to supercharge your literature review, making resear
 <img width="1392" alt="arc sample" src="https://github.com/user-attachments/assets/f8a430f9-369a-4c97-8062-e5483285fe79" />
 <img width="1127" alt="brave sample" src="https://github.com/user-attachments/assets/f1ac44ff-c88e-4376-be14-d7714615d8ae" />
 
-
-## Why?
-
-An average paper on arXiv **cites 30-50** other papers, that is 30-50 many concepts a reader may need to read through. Those new to research and those who read papers as a hobby face this barrier of entry, which could be demotivating and time-consuming. Currently, solutions include opening multiple tabs on your browser to have more context, but that is time-intensive and not optimal for your computing resources. With the advent of LLMs and AI tools, a lot of people use them to summarize key findings of a paper but that too requires one to navigate away from their paper and just makes the whole process inconvenient. 
-
-## How?
+## How Does It Work?
 
 By integrating multiple APIs and aggregating data from multiple sources, Alice is your go-to tool for literature review and academic software development. 
 
@@ -27,6 +22,8 @@ This tool is extremely cost-effective. It takes less than 5 cents to generate th
 ## Inspiration
 
 Today, hobbyists and newbies to the field of technology spend more time reading research papers than ever before. The rapid growth and widespread adoption of GenAI technology has sparked greater public interest in the field on an academic level. As an undergraduate researcher and tech optimist, I love reading research papers. They shape our present lives and will continue to guide us to the future. However, academia was not accessible to all readers because of its hefty prerequisites. 
+
+An average paper on arXiv **cites 30-50** other papers, that is 30-50 many concepts a reader may need to read through. Those new to research and those who read papers as a hobby face this barrier of entry, which could be demotivating and time-consuming. Currently, solutions include opening multiple tabs on your browser to have more context, but that is time-intensive and not optimal for your computing resources. With the advent of LLMs and AI tools, a lot of people use them to summarize key findings of a paper but that too requires one to navigate away from their paper and just makes the whole process inconvenient. 
 
 ---
 
