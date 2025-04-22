@@ -152,15 +152,13 @@ function fetchCitationInfo(pdfDocument) {
           "--space-scale-factor",
           spaceScaleFactor
         );
-
-        // We don't need to set the total-scale-factor as PDF.js already sets it on the page
-        // We just need to make sure our popup is aware of it
-        console.log(
-          "Current scale factor:",
-          currentScaleFactor,
-          "Space scale factor:",
-          spaceScaleFactor
-        );
+        
+        // console.log(
+        //   "Current scale factor:",
+        //   currentScaleFactor,
+        //   "Space scale factor:",
+        //   spaceScaleFactor
+        // );
       }
     } catch (err) {
       console.error("Error updating scale factor:", err);
@@ -216,7 +214,9 @@ function fetchCitationInfo(pdfDocument) {
 
   $("a").on({
     mouseenter: function () {
-      console.log($(this).attr("href"));
+      console.log("-"*30);
+      console.log("Finding paper data for:", $(this).attr("href"));
+      console.log("-"*30);
 
       // Extract paper ID from current URL
       const currentUrl = window.location.href;
