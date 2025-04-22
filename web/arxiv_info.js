@@ -218,6 +218,9 @@ function fetchCitationInfo(pdfDocument) {
       console.log("Finding paper data for:", $(this).attr("href"));
       console.log("-"*30);
 
+      // Create a unique ID for this popup to avoid selector conflicts
+      const popupId = `popup-${Math.random().toString(36).substr(2, 9)}`;
+
       // Extract paper ID from current URL
       const currentUrl = window.location.href;
       let paperId = "";
@@ -307,9 +310,6 @@ function fetchCitationInfo(pdfDocument) {
       if (activePopup && activeLink === this) {
         return;
       }
-
-      // Create a unique ID for this popup to avoid selector conflicts
-      const popupId = `popup-${Math.random().toString(36).substr(2, 9)}`;
 
       // get location relative to page for nicer display
       let tipsyDirection;
@@ -452,6 +452,19 @@ function fetchCitationInfo(pdfDocument) {
             console.log("Generated XML:", result);
             if (result) {
               matchingEntry = result;
+              const { popup, destroy } = await createAndShowPopup({
+                element: this,
+                popupId,
+                tipsyDirection,
+                matchingEntry,
+                currentScaleFactor,
+                onPopupCreated: ($popup) => {
+                  // Store the current element and popup as active
+                  activeLink = this;
+                  activePopup = $popup;
+                }
+              });
+              console.log("Created popup");
             }
           }
         } else {
@@ -465,6 +478,19 @@ function fetchCitationInfo(pdfDocument) {
             console.log("Generated XML:", result);
             if (result) {
               matchingEntry = result;
+              const { popup, destroy } = await createAndShowPopup({
+                element: this,
+                popupId,
+                tipsyDirection,
+                matchingEntry,
+                currentScaleFactor,
+                onPopupCreated: ($popup) => {
+                  // Store the current element and popup as active
+                  activeLink = this;
+                  activePopup = $popup;
+                }
+              });
+              console.log("Created popup");
             }
           } catch (error) {
             console.error("Error in title extraction fallback:", error);
@@ -520,6 +546,19 @@ function fetchCitationInfo(pdfDocument) {
           console.log("Generated XML:", result);
           if (result) {
             matchingEntry = result;
+            const { popup, destroy } = await createAndShowPopup({
+              element: this,
+              popupId,
+              tipsyDirection,
+              matchingEntry,
+              currentScaleFactor,
+              onPopupCreated: ($popup) => {
+                // Store the current element and popup as active
+                activeLink = this;
+                activePopup = $popup;
+              }
+            });
+            console.log("Created popup");
           }
         }
 
@@ -630,6 +669,19 @@ function fetchCitationInfo(pdfDocument) {
                 console.log("Generated XML:", result);
                 if (result) {
                   matchingEntry = result;
+                  const { popup, destroy } = await createAndShowPopup({
+                    element: this,
+                    popupId,
+                    tipsyDirection,
+                    matchingEntry,
+                    currentScaleFactor,
+                    onPopupCreated: ($popup) => {
+                      // Store the current element and popup as active
+                      activeLink = this;
+                      activePopup = $popup;
+                    }
+                  });
+                  console.log("Created popup");
                 }
                 // multiple matches, bibtex is ambiguous
                 fail(
@@ -652,6 +704,19 @@ function fetchCitationInfo(pdfDocument) {
           console.log("Generated XML:", result);
           if (result) {
             matchingEntry = result;
+            const { popup, destroy } = await createAndShowPopup({
+              element: this,
+              popupId,
+              tipsyDirection,
+              matchingEntry,
+              currentScaleFactor,
+              onPopupCreated: ($popup) => {
+                // Store the current element and popup as active
+                activeLink = this;
+                activePopup = $popup;
+              }
+            });
+            console.log("Created popup");
           }
           fail(this, "No matching entries found for this reference");
           return;
@@ -767,23 +832,12 @@ function fetchCitationInfo(pdfDocument) {
           document.head.appendChild(link);
         }
 
-        // Extract paper data from matchingEntry
-        const paperData = {
-          title: matchingEntry.getElementsByTagName("title")[0]?.textContent || "",
-          authors: Array.from(matchingEntry.getElementsByTagName("author") || [])
-            .map(a => a.children[0]?.textContent || "")
-            .filter(Boolean),
-          abstract: matchingEntry.getElementsByTagName("summary")[0]?.textContent || "",
-          date: matchingEntry.getElementsByTagName("published")[0]?.textContent || "",
-          link: matchingEntry.getElementsByTagName("id")[0]?.textContent || "",
-        };
-
         // Create and show the popup
         const { popup, destroy } = await createAndShowPopup({
           element: this,
           popupId,
           tipsyDirection,
-          paperData,
+          matchingEntry,
           currentScaleFactor,
           onPopupCreated: ($popup) => {
             // Store the current element and popup as active
@@ -803,10 +857,21 @@ async function createAndShowPopup({
   element, // The element that triggered the popup
   popupId, // Unique ID for the popup
   tipsyDirection, // Direction for the popup (n/s + e/w)
-  paperData, // Object containing paper data (title, authors, abstract, etc.)
+  matchingEntry, // XML entry containing paper data (title, authors, abstract, etc.)
   currentScaleFactor = 1, // Current scale factor for the UI
   onPopupCreated = null, // Optional callback when popup is created
 }) {
+
+  const paperData = {
+    title: matchingEntry.getElementsByTagName("title")[0]?.textContent || "",
+    authors: Array.from(matchingEntry.getElementsByTagName("author") || [])
+      .map(a => a.children[0]?.textContent || "")
+      .filter(Boolean),
+    abstract: matchingEntry.getElementsByTagName("summary")[0]?.textContent || "",
+    date: matchingEntry.getElementsByTagName("published")[0]?.textContent || "",
+    link: matchingEntry.getElementsByTagName("id")[0]?.textContent || "",
+  };
+
   // Destructure paper data with defaults
   const {
     title: fullTitle = "",
