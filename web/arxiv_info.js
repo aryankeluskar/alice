@@ -399,13 +399,6 @@ function initializeArxivInfo(pdfDocument) {
 
       console.log("tipsyDirection", tipsyDirection);
 
-      function fail(el, reason) {
-        // Log the failure reason to help with debugging
-        console.log(`Citation popup failed: ${reason}`, $(el).attr("href"));
-        // Store the reason on the element for reference
-        $(el).data("failReason", reason);
-      }
-
       const linkHref = $(this).attr("href");
       const bibtexRef = getBibtexReferenceFromInternalLink(linkHref);
       const surroundingText = $(this).parent().text().trim();
@@ -1406,6 +1399,14 @@ function initializeArxivInfo(pdfDocument) {
 }
 
 export { initializeArxivInfo };
+
+function fail(el, reason) {
+  // Log the failure reason to help with debugging
+  console.log(`Citation popup failed: ${reason}`, $(el).attr("href"));
+  // Store the reason on the element for reference
+  $(el).data("failReason", reason);
+}
+
 
 async function getGeminiFallbackReference(paperId, linkHref, currentElement) {
   const cachedPaperDataString = localStorage.getItem(`paper_data_${paperId}`);
