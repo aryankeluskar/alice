@@ -308,125 +308,6 @@ function initializeArxivInfo(pdfDocument) {
         fetchDataForPaper(paperId);
       }
 
-      // Function to fetch all data for a paper (extract title -> get S2 -> store)
-      async function fetchDataForPaper(id) {
-        console.log("Attempting to extract title from PDF for paper ID:", id);
-        const pdfDocument = PDFViewerApplication.pdfDocument;
-        
-        if (pdfDocument) {
-          try {
-            const page = await pdfDocument.getPage(1);
-            const textContent = await page.getTextContent();
-            const pageText = textContent.items.map(item => item.str).join(' ');
-            console.log("Extracted text from first page for", id, ":", pageText.substring(0, 200) + "...");
-
-            // Call Gemini API to extract title from the first page text
-            const extractedTitle = await extractTitleWithGemini(pageText);
-
-            if (extractedTitle) {
-              console.log("Extracted title from PDF for", id, ":", extractedTitle);
-              // Now fetch Semantic Scholar data using the extracted title
-              await fetchAndStoreSemanticScholarData(extractedTitle, id);
-            } else {
-              console.error("Could not extract title using Gemini for paper ID:", id);
-              // Optionally call fail() here
-              // fail(currentElement, "Failed to extract title from PDF");
-            }
-          } catch (error) {
-            console.error("Error getting page text content or extracting title for", id, ":", error);
-            // Optionally call fail() here
-            // fail(currentElement, "Failed to get PDF text or extract title");
-          }
-        } else {
-          console.log("PDF document not loaded yet for paper ID:", id);
-          // Optionally call fail() here
-          // fail(currentElement, "PDF document not loaded");
-        }
-      }
-
-      // Function to call Gemini API to extract title
-      async function extractTitleWithGemini(pageText) {
-        try {
-          const response = await fetch('https://api.aryankeluskar.com/api/gemini', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              contents: [{
-                parts: [{
-                  text: `Extract only the title of this academic paper. Return ONLY the title, nothing else. If you cannot find a clear title, return NULL.\n\nText from first page:\n${pageText}`
-                }]
-              }]
-            })
-          });
-          const result = await response.json();
-          if (result.candidates && result.candidates[0] && result.candidates[0].content) {
-            const title = result.candidates[0].content.parts[0].text.trim();
-            return (title && title !== 'NULL') ? title : null;
-          }
-          return null;
-        } catch (error) {
-          console.error("Error calling Gemini API for title extraction:", error);
-          return null;
-        }
-      }
-
-      // Function to fetch data from Semantic Scholar and store it
-      async function fetchAndStoreSemanticScholarData(title, paperId) {
-        console.log(`Fetching Semantic Scholar data for title: "${title}", paper ID: ${paperId}`);
-        try {
-          // First get Semantic Scholar paper ID using title match
-          const matchResponse = await fetchWithRetry(
-            `https://api.semanticscholar.org/graph/v1/paper/search/match?query=${encodeURIComponent(title)}`
-          );
-
-          if (!matchResponse.ok) {
-            if (matchResponse.status === 404) {
-              console.log("Semantic Scholar: Title match not found for", title);
-              // Store minimal data indicating title but no S2 match
-              const minimalData = { title: title, semantic_paper_id: null, references: [] };
-              localStorage.setItem(`paper_data_${paperId}`, JSON.stringify(minimalData));
-              return; // Stop if no match
-            } else {
-              throw new Error(`Title match failed: ${matchResponse.status}`);
-            }
-          }
-
-          const matchData = await matchResponse.json();
-          const semanticPaperId = matchData.data[0].paperId;
-          console.log(`Semantic Scholar ID found for "${title}": ${semanticPaperId}`);
-
-          // Then get references using the Semantic Scholar paper ID
-          const referencesResponse = await fetchWithRetry(
-            `https://api.semanticscholar.org/graph/v1/paper/${semanticPaperId}/references?fields=abstract&offset=0&limit=999`
-          );
-
-          if (!referencesResponse.ok) {
-            throw new Error(`References fetch failed: ${referencesResponse.status}`);
-          }
-
-          const referencesData = await referencesResponse.json();
-          console.log(`Fetched ${referencesData.data ? referencesData.data.length : 0} references for ${semanticPaperId}`);
-
-          // Store title, Semantic Scholar ID, and references together in localStorage
-          const fullPaperData = {
-            title: title,
-            semantic_paper_id: semanticPaperId,
-            references: referencesData.data || [] // Ensure references is always an array
-          };
-
-          localStorage.setItem(`paper_data_${paperId}`, JSON.stringify(fullPaperData));
-          console.log("Stored full paper data for", paperId, ":", fullPaperData);
-          // **TODO:** Use fullPaperData to populate the popup now that it's fetched
-
-        } catch (error) {
-          console.error("Error fetching or storing Semantic Scholar data for", paperId, ":", error);
-           // Optionally call fail() here
-           // fail(currentElement, "Failed to fetch Semantic Scholar data");
-        }
-      }
-
       // if "cite" not in href, ignore
       if (!$(this).attr("href").includes("cite")) {
         return;
@@ -629,8 +510,121 @@ function initializeArxivInfo(pdfDocument) {
           }
         }
 
-        // HERE
+        if (matchingReference && matchingReference.citedPaper.paperId) {
+          const semanticScholarId = matchingReference.citedPaper.paperId;
+          try {
+            // Fetch data from Semantic Scholar API
+            const apiUrl = `https://api.semanticscholar.org/graph/v1/paper/${semanticScholarId}?fields=title,abstract,year,openAccessPdf,authors`;
+            const response = await fetch(apiUrl);
+            
+            if (!response.ok) {
+              throw new Error(`Semantic Scholar API request failed: ${response.status}`);
+            }
+            
+            const paperData = await response.json();
+            console.log("Semantic Scholar data", paperData);
+            
+            // Create ArxivInfo object with the data
+            const paperUrl = paperData.openAccessPdf?.url || matchingReference.citedPaper.url || '';
+            const authorsString = paperData.authors?.map(author => author.name).join(', ') || '';
+            
+            const arxivInfo = new ArxivInfo(
+              paperData.title,
+              authorsString,
+              paperData.year?.toString() || '',
+              paperData.abstract || '',
+              paperUrl
+            );
+            
+            // Set the current element's data for the popup
+            currentElement.dataset.title = arxivInfo.title;
+            currentElement.dataset.authors = arxivInfo.authors;
+            currentElement.dataset.year = arxivInfo.year;
+            currentElement.dataset.abstract = arxivInfo.abstract;
+            currentElement.dataset.link = arxivInfo.link;
+            
+            // Success message
+            console.log("Successfully retrieved paper data from Semantic Scholar", arxivInfo);
+            
+            // Create XML representation
+            const currentDate = new Date().toISOString();
+            const xmlDoc = document.implementation.createDocument("http://www.w3.org/2005/Atom", "entry", null);
+            const entry = xmlDoc.documentElement;
+
+            // Add namespace
+            entry.setAttribute("xmlns", "http://www.w3.org/2005/Atom");
+
+            // Create and append id element
+            const idElement = xmlDoc.createElement("id");
+            idElement.textContent = arxivInfo.link;
+            entry.appendChild(idElement);
+
+            // Create and append updated element
+            const updatedElement = xmlDoc.createElement("updated");
+            updatedElement.textContent = currentDate;
+            entry.appendChild(updatedElement);
+
+            // Create and append published element
+            const publishedElement = xmlDoc.createElement("published");
+            publishedElement.textContent = `${arxivInfo.year}-01-01T00:00:00Z`; // Default to start of year since we only have year
+            entry.appendChild(publishedElement);
+
+            // Create and append title element
+            const titleElement = xmlDoc.createElement("title");
+            titleElement.textContent = arxivInfo.title;
+            entry.appendChild(titleElement);
+
+            // Create and append summary element
+            const summaryElement = xmlDoc.createElement("summary");
+            summaryElement.textContent = arxivInfo.abstract;
+            entry.appendChild(summaryElement);
+
+            // Create and append author elements
+            const authors = arxivInfo.authors.split(', ');
+            authors.forEach(authorName => {
+              const authorElement = xmlDoc.createElement("author");
+              const nameElement = xmlDoc.createElement("name");
+              nameElement.textContent = authorName;
+              authorElement.appendChild(nameElement);
+              entry.appendChild(authorElement);
+            });
+
+            // Create and append link elements
+            const htmlLink = xmlDoc.createElement("link");
+            htmlLink.setAttribute("href", arxivInfo.link);
+            htmlLink.setAttribute("rel", "alternate");
+            htmlLink.setAttribute("type", "text/html");
+            entry.appendChild(htmlLink);
+
+            // Create PDF link (assuming PDF URL is same as HTML but with /pdf/ instead of /abs/)
+            const pdfLink = xmlDoc.createElement("link");
+            pdfLink.setAttribute("title", "pdf");
+            pdfLink.setAttribute("href", arxivInfo.link.replace("/abs/", "/pdf/"));
+            pdfLink.setAttribute("rel", "related");
+            pdfLink.setAttribute("type", "application/pdf");
+            entry.appendChild(pdfLink);
+
+            // Convert to string
+            const serializer = new XMLSerializer();
+            const xmlString = serializer.serializeToString(xmlDoc);
+            console.log("Generated XML:", entry);
+
+            // Store the XML string on the element for later use
+            currentElement.dataset.xmlRepresentation = xmlString;
+
+            return entry;
+
+          } catch (error) {
+            console.error("Error fetching Semantic Scholar data:", error);
+            fail(currentElement, "Failed to fetch paper details from Semantic Scholar");
+          }
+        } else {
+          console.log("No matching reference found or missing paper ID");
+          fail(currentElement, "No matching reference found");
+        }
       }
+
+      let matchingEntry = null;
 
       // Make this an immediately invoked async function to allow using await
       (async () => {
@@ -642,15 +636,18 @@ function initializeArxivInfo(pdfDocument) {
             console.log(
               "ArXiv API failed or returned empty results, trying Semantic Scholar fallback..."
             );
-            await getGeminiFallbackReference(paperId, linkHref);
+            let result = await getGeminiFallbackReference(paperId, linkHref);
+            if (result) {
+              matchingEntry = result;
+            }
           }
         } else {
           // AI-powered fallback path
-          fail(currentElement, "Failed to parse BibTeX reference");
-
-          // Extract title using AI - properly handle the Promise
           try {
-            await getGeminiFallbackReference(paperId, linkHref);
+            let result = await getGeminiFallbackReference(paperId, linkHref);
+            if (result) {
+              matchingEntry = result;
+            }
           } catch (error) {
             console.error("Error in title extraction fallback:", error);
             fail(currentElement, "Title extraction fallback failed");
@@ -697,10 +694,12 @@ function initializeArxivInfo(pdfDocument) {
         }
 
         if (!found) {
-          await getGeminiFallbackReference(paperId, linkHref);
+          let result = await getGeminiFallbackReference(paperId, linkHref);
+          if (result) {
+            matchingEntry = result;
+          }
         }
 
-        let matchingEntry = null;
         for (const entry of xmlResponse.children[0].children) {
           if (entry.nodeName !== "entry") {
             continue;
@@ -800,6 +799,10 @@ function initializeArxivInfo(pdfDocument) {
                 .startsWith(title)
             ) {
               if (matchingEntry) {
+                let result = await getGeminiFallbackReference(paperId, linkHref);
+                if (result) {
+                  matchingEntry = result;
+                }
                 // multiple matches, bibtex is ambiguous
                 fail(
                   this,
@@ -813,9 +816,17 @@ function initializeArxivInfo(pdfDocument) {
         }
 
         if (!matchingEntry) {
+          let result = await getGeminiFallbackReference(paperId, linkHref);
+          if (result) {
+            matchingEntry = result;
+          }
           fail(this, "No matching entries found for this reference");
           return;
         }
+
+        
+
+        console.log("matchingEntry", matchingEntry);
 
         // check if user is still hovering before adding to DOM
         if ($(this).parent().find("a:hover").length === 0) {
@@ -2510,6 +2521,128 @@ Your response should be comprehensive yet concise, focusing on practical impleme
 }
 
 export { initializeArxivInfo };
+
+
+      // Function to fetch all data for a paper (extract title -> get S2 -> store)
+      async function fetchDataForPaper(id) {
+        console.log("Attempting to extract title from PDF for paper ID:", id);
+        const pdfDocument = PDFViewerApplication.pdfDocument;
+        
+        if (pdfDocument) {
+          try {
+            const page = await pdfDocument.getPage(1);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map(item => item.str).join(' ');
+            console.log("Extracted text from first page for", id, ":", pageText.substring(0, 200) + "...");
+
+            // Call Gemini API to extract title from the first page text
+            const extractedTitle = await extractTitleWithGemini(pageText);
+
+            if (extractedTitle) {
+              console.log("Extracted title from PDF for", id, ":", extractedTitle);
+              // Now fetch Semantic Scholar data using the extracted title
+              await fetchAndStoreSemanticScholarData(extractedTitle, id);
+            } else {
+              console.error("Could not extract title using Gemini for paper ID:", id);
+              // Optionally call fail() here
+              // fail(currentElement, "Failed to extract title from PDF");
+            }
+          } catch (error) {
+            console.error("Error getting page text content or extracting title for", id, ":", error);
+            // Optionally call fail() here
+            // fail(currentElement, "Failed to get PDF text or extract title");
+          }
+        } else {
+          console.log("PDF document not loaded yet for paper ID:", id);
+          // Optionally call fail() here
+          // fail(currentElement, "PDF document not loaded");
+        }
+      }
+
+      // Function to call Gemini API to extract title
+      async function extractTitleWithGemini(pageText) {
+        try {
+          const response = await fetch('https://api.aryankeluskar.com/api/gemini', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contents: [{
+                parts: [{
+                  text: `Extract only the title of this academic paper. Return ONLY the title, nothing else. If you cannot find a clear title, return NULL.\n\nText from first page:\n${pageText}`
+                }]
+              }]
+            })
+          });
+          const result = await response.json();
+          if (result.candidates && result.candidates[0] && result.candidates[0].content) {
+            const title = result.candidates[0].content.parts[0].text.trim();
+            return (title && title !== 'NULL') ? title : null;
+          }
+          return null;
+        } catch (error) {
+          console.error("Error calling Gemini API for title extraction:", error);
+          return null;
+        }
+      }
+
+      // Function to fetch data from Semantic Scholar and store it
+      async function fetchAndStoreSemanticScholarData(title, paperId) {
+        console.log(`Fetching Semantic Scholar data for title: "${title}", paper ID: ${paperId}`);
+        try {
+          // First get Semantic Scholar paper ID using title match
+          const matchResponse = await fetchWithRetry(
+            `https://api.semanticscholar.org/graph/v1/paper/search/match?query=${encodeURIComponent(title)}`
+          );
+
+          if (!matchResponse.ok) {
+            if (matchResponse.status === 404) {
+              console.log("Semantic Scholar: Title match not found for", title);
+              // Store minimal data indicating title but no S2 match
+              const minimalData = { title: title, semantic_paper_id: null, references: [] };
+              localStorage.setItem(`paper_data_${paperId}`, JSON.stringify(minimalData));
+              return; // Stop if no match
+            } else {
+              throw new Error(`Title match failed: ${matchResponse.status}`);
+            }
+          }
+
+          const matchData = await matchResponse.json();
+          const semanticPaperId = matchData.data[0].paperId;
+          console.log(`Semantic Scholar ID found for "${title}": ${semanticPaperId}`);
+
+          // Then get references using the Semantic Scholar paper ID
+          const referencesResponse = await fetchWithRetry(
+            `https://api.semanticscholar.org/graph/v1/paper/${semanticPaperId}/references?fields=abstract&offset=0&limit=999`
+          );
+
+          if (!referencesResponse.ok) {
+            throw new Error(`References fetch failed: ${referencesResponse.status}`);
+          }
+
+          const referencesData = await referencesResponse.json();
+          console.log(`Fetched ${referencesData.data ? referencesData.data.length : 0} references for ${semanticPaperId}`);
+
+          // Store title, Semantic Scholar ID, and references together in localStorage
+          const fullPaperData = {
+            title: title,
+            semantic_paper_id: semanticPaperId,
+            references: referencesData.data || [] // Ensure references is always an array
+          };
+
+          localStorage.setItem(`paper_data_${paperId}`, JSON.stringify(fullPaperData));
+          console.log("Stored full paper data for", paperId, ":", fullPaperData);
+          // **TODO:** Use fullPaperData to populate the popup now that it's fetched
+
+        } catch (error) {
+          console.error("Error fetching or storing Semantic Scholar data for", paperId, ":", error);
+           // Optionally call fail() here
+           // fail(currentElement, "Failed to fetch Semantic Scholar data");
+        }
+      }
+
+ 
 
 // Helper functions for code generation
 async function fetchPaperText(arxivLink) {
