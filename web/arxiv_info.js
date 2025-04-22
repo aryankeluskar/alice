@@ -104,152 +104,6 @@ async function fetchWithRetry(url, options, maxRetries = 3) {
   throw lastError;
 }
 
-// Function to extract paper title from link using Perplexity's Sonar-pro API
-async function extractPaperTitleFromLink(
-  linkHref,
-  surroundingText = "",
-  element = null
-) {
-  // Debug mode flag - set to true to see more details in console
-  const DEBUG = true;
-
-  linkHref = linkHref.split("#cite.")[1];
-
-  // Use api.aryankeluskar.com as a proxy for Perplexity API
-  const apiEndpoint = "https://api.aryankeluskar.com/api/perplexity";
-
-  if (DEBUG)
-    console.log(
-      "Attempting to extract paper title from link using Perplexity:",
-      linkHref
-    );
-
-  // Get more context from the document if possible
-  let enhancedContext = surroundingText;
-  if (element) {
-    // Try to get more context from surrounding paragraphs
-    const parentParagraph = $(element).closest("p, div");
-    if (parentParagraph.length) {
-      enhancedContext = parentParagraph.text().trim();
-    }
-
-    // Get the link text itself which often contains part of the title
-    const linkText = $(element).text().trim();
-    if (linkText && linkText.length > 0) {
-      enhancedContext = `Link Text: ${linkText}\nSurrounding Text: ${enhancedContext}`;
-    }
-  }
-
-  try {
-    const response = await fetchWithRetry(
-      apiEndpoint,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "sonar",
-          prompt: `The following is how a research paper was short-hand cited in a document. Your job is to extract the title of the paper from the citation based on the surrounding text and the link text.
-If you cannot confidently identify a specific academic paper title, respond with exactly "NULL" (without quotes). Return only the title of the paper and no other text.
-
-Link: ${linkHref}`,
-        }),
-      },
-      3
-    );
-
-    const result = await response.json();
-
-    if (DEBUG) {
-      console.log("Raw response from API proxy:", result);
-    }
-
-    // Check if we received the response in the original Perplexity format
-    if (!result.choices || !result.choices[0] || !result.choices[0].message) {
-      console.error("Unexpected response structure from API proxy:", result);
-      return null;
-    }
-
-    const extractedTitle = result.choices[0].message.content.trim();
-
-    // If Perplexity couldn't find a title, it will return NULL
-    if (extractedTitle === "NULL") {
-      console.log("Perplexity couldn't extract a title from the link");
-      return null;
-    }
-
-    console.log("Extracted paper title:", extractedTitle);
-    return extractedTitle;
-  } catch (error) {
-    console.error("Error extracting paper title from link:", error);
-    return null;
-  }
-}
-
-// Function to try getting paper info from Perplexity as fallback
-async function getPaperInfoFromPerplexity(author, year, title) {
-  const DEBUG = true;
-  const apiEndpoint = "https://api.aryankeluskar.com/api/perplexity";
-
-  if (DEBUG) {
-    console.log("Attempting to get paper info from Perplexity:", {
-      author,
-      year,
-      title,
-    });
-  }
-
-  try {
-    const response = await fetchWithRetry(
-      apiEndpoint,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "sonar",
-          prompt: `Given this information about an academic paper:
-Author: ${author}
-Year: ${year}
-Title or Keywords: ${title}
-
-Please identify the full title of this academic paper. If you cannot confidently identify a specific academic paper title, respond with exactly "NULL" (without quotes). Return only the title of the paper and no other text.`,
-        }),
-      },
-      3
-    );
-
-    const result = await response.json();
-
-    if (DEBUG) {
-      console.log("Raw response from Perplexity API:", result);
-    }
-
-    if (!result.choices || !result.choices[0] || !result.choices[0].message) {
-      console.error(
-        "Unexpected response structure from Perplexity API:",
-        result
-      );
-      return null;
-    }
-
-    const extractedTitle = result.choices[0].message.content.trim();
-
-    if (extractedTitle === "NULL") {
-      console.log("Perplexity couldn't find paper info");
-      return null;
-    }
-
-    console.log("Extracted paper title from Perplexity:", extractedTitle);
-    return extractedTitle;
-  } catch (error) {
-    console.error("Error getting paper info from Perplexity:", error);
-    return null;
-  }
-}
-
 function initializeArxivInfo(pdfDocument) {
   // Check if jQuery is loaded, if not, load it dynamically
   if (typeof jQuery === 'undefined' || typeof $ === 'undefined') {
@@ -409,58 +263,167 @@ function initializeArxivInfo(pdfDocument) {
     mouseenter: function() {
       console.log($(this).attr("href"));
 
-      // Check localStorage for paper title first
-      const storedTitle = localStorage.getItem('paper_title');
-      if (storedTitle) {
-        console.log("Found stored paper title:", storedTitle);
+      // Extract paper ID from current URL
+      const currentUrl = window.location.href;
+      let paperId = '';
+      
+      // Extract paper ID based on URL pattern
+      if (currentUrl.includes('arxiv.org')) {
+        // For arXiv URLs like .../1810.04805
+        const match = currentUrl.match(/\/(\d+\.\d+)/);
+        if (match) paperId = match[1];
+      } else if (currentUrl.includes('biorxiv.org')) {
+        // For bioRxiv URLs like .../10.1101/2025.04.16.649082v1
+        const match = currentUrl.match(/\/(\d+\.\d+\/[\d.]+v\d)/);
+        if (match) paperId = match[1];
+      }
+
+      if (!paperId) {
+        console.error("Could not extract paper ID from URL:", currentUrl);
+        // Optionally, you might want to call fail() here or return
+        // fail(this, "Could not extract paper ID");
+        return; // Stop processing if no paper ID
+      }
+
+      console.log("Extracted paper ID:", paperId);
+
+      // Check if we already have data for this paper ID in localStorage
+      const cachedPaperDataString = localStorage.getItem(`paper_data_${paperId}`);
+      
+      if (cachedPaperDataString) {
+        try {
+          const cachedPaperData = JSON.parse(cachedPaperDataString);
+          console.log("Found cached paper data for", paperId, ":", cachedPaperData);
+          // **TODO:** Use cachedPaperData to populate the popup later
+        } catch (e) {
+          console.error("Error parsing cached paper data:", e);
+          // Clear corrupted data
+          localStorage.removeItem(`paper_data_${paperId}`);
+          // Proceed to fetch fresh data
+          fetchDataForPaper(paperId);
+        }
       } else {
-        console.log("No stored title found, attempting to extract from PDF");
-        // Get the current page text content
+        console.log("No cached data found for paper ID:", paperId, ". Fetching fresh data.");
+        // Fetch fresh data (extract title, then get Semantic Scholar info)
+        fetchDataForPaper(paperId);
+      }
+
+      // Function to fetch all data for a paper (extract title -> get S2 -> store)
+      async function fetchDataForPaper(id) {
+        console.log("Attempting to extract title from PDF for paper ID:", id);
         const pdfDocument = PDFViewerApplication.pdfDocument;
+        
         if (pdfDocument) {
-          // Get the first page
-          pdfDocument.getPage(1).then(function(page) {
-            return page.getTextContent();
-          }).then(async function(textContent) {
-            // Concatenate all the text items
+          try {
+            const page = await pdfDocument.getPage(1);
+            const textContent = await page.getTextContent();
             const pageText = textContent.items.map(item => item.str).join(' ');
-            console.log("Extracted text from first page:", pageText);
+            console.log("Extracted text from first page for", id, ":", pageText.substring(0, 200) + "...");
 
-            // Call Gemini API to extract title
-            try {
-              const response = await fetch('https://api.aryankeluskar.com/api/gemini', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  contents: [{
-                    parts: [{
-                      text: `Extract only the title of this academic paper. Return ONLY the title, nothing else. If you cannot find a clear title, return NULL.
+            // Call Gemini API to extract title from the first page text
+            const extractedTitle = await extractTitleWithGemini(pageText);
 
-Text from first page:
-${pageText}`
-                    }]
-                  }]
-                })
-              });
-
-              const result = await response.json();
-              if (result.candidates && result.candidates[0] && result.candidates[0].content) {
-                const extractedTitle = result.candidates[0].content.parts[0].text.trim();
-                if (extractedTitle && extractedTitle !== 'NULL') {
-                  console.log("Extracted title from PDF:", extractedTitle);
-                  localStorage.setItem('paper_title', extractedTitle);
-                }
-              }
-            } catch (error) {
-              console.error("Error extracting title:", error);
+            if (extractedTitle) {
+              console.log("Extracted title from PDF for", id, ":", extractedTitle);
+              // Now fetch Semantic Scholar data using the extracted title
+              await fetchAndStoreSemanticScholarData(extractedTitle, id);
+            } else {
+              console.error("Could not extract title using Gemini for paper ID:", id);
+              // Optionally call fail() here
+              // fail(currentElement, "Failed to extract title from PDF");
             }
-          }).catch(function(error) {
-            console.error("Error getting page text content:", error);
-          });
+          } catch (error) {
+            console.error("Error getting page text content or extracting title for", id, ":", error);
+            // Optionally call fail() here
+            // fail(currentElement, "Failed to get PDF text or extract title");
+          }
         } else {
-          console.log("PDF document not loaded yet");
+          console.log("PDF document not loaded yet for paper ID:", id);
+          // Optionally call fail() here
+          // fail(currentElement, "PDF document not loaded");
+        }
+      }
+
+      // Function to call Gemini API to extract title
+      async function extractTitleWithGemini(pageText) {
+        try {
+          const response = await fetch('https://api.aryankeluskar.com/api/gemini', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contents: [{
+                parts: [{
+                  text: `Extract only the title of this academic paper. Return ONLY the title, nothing else. If you cannot find a clear title, return NULL.\n\nText from first page:\n${pageText}`
+                }]
+              }]
+            })
+          });
+          const result = await response.json();
+          if (result.candidates && result.candidates[0] && result.candidates[0].content) {
+            const title = result.candidates[0].content.parts[0].text.trim();
+            return (title && title !== 'NULL') ? title : null;
+          }
+          return null;
+        } catch (error) {
+          console.error("Error calling Gemini API for title extraction:", error);
+          return null;
+        }
+      }
+
+      // Function to fetch data from Semantic Scholar and store it
+      async function fetchAndStoreSemanticScholarData(title, paperId) {
+        console.log(`Fetching Semantic Scholar data for title: "${title}", paper ID: ${paperId}`);
+        try {
+          // First get Semantic Scholar paper ID using title match
+          const matchResponse = await fetchWithRetry(
+            `https://api.semanticscholar.org/graph/v1/paper/search/match?query=${encodeURIComponent(title)}`
+          );
+
+          if (!matchResponse.ok) {
+            if (matchResponse.status === 404) {
+              console.log("Semantic Scholar: Title match not found for", title);
+              // Store minimal data indicating title but no S2 match
+              const minimalData = { title: title, semantic_paper_id: null, references: [] };
+              localStorage.setItem(`paper_data_${paperId}`, JSON.stringify(minimalData));
+              return; // Stop if no match
+            } else {
+              throw new Error(`Title match failed: ${matchResponse.status}`);
+            }
+          }
+
+          const matchData = await matchResponse.json();
+          const semanticPaperId = matchData.data[0].paperId;
+          console.log(`Semantic Scholar ID found for "${title}": ${semanticPaperId}`);
+
+          // Then get references using the Semantic Scholar paper ID
+          const referencesResponse = await fetchWithRetry(
+            `https://api.semanticscholar.org/graph/v1/paper/${semanticPaperId}/references?fields=abstract&offset=0&limit=999`
+          );
+
+          if (!referencesResponse.ok) {
+            throw new Error(`References fetch failed: ${referencesResponse.status}`);
+          }
+
+          const referencesData = await referencesResponse.json();
+          console.log(`Fetched ${referencesData.data ? referencesData.data.length : 0} references for ${semanticPaperId}`);
+
+          // Store title, Semantic Scholar ID, and references together in localStorage
+          const fullPaperData = {
+            title: title,
+            semantic_paper_id: semanticPaperId,
+            references: referencesData.data || [] // Ensure references is always an array
+          };
+
+          localStorage.setItem(`paper_data_${paperId}`, JSON.stringify(fullPaperData));
+          console.log("Stored full paper data for", paperId, ":", fullPaperData);
+          // **TODO:** Use fullPaperData to populate the popup now that it's fetched
+
+        } catch (error) {
+          console.error("Error fetching or storing Semantic Scholar data for", paperId, ":", error);
+           // Optionally call fail() here
+           // fail(currentElement, "Failed to fetch Semantic Scholar data");
         }
       }
 
@@ -624,6 +587,51 @@ ${pageText}`
 
       const parsedInfo = parseBibtexReference(bibtexRef);
 
+      async function getGeminiFallbackReference(paperId, linkHref) {
+        const cachedPaperDataString = localStorage.getItem(`paper_data_${paperId}`);
+        const cachedReference = JSON.parse(cachedPaperDataString)["references"];
+        const fallback_prompt = "From the given list of references, which reference do you predict the citation hyperlink " + linkHref.split("cite")[1] + " refers to? \n\n Return a string with the EXACT paper title found in the list. ONLY RETURN THE TITLE EXACTLY AS IT IS IN THE LIST, NOTHING ELSE. \n\n List of references: " + JSON.stringify(cachedReference);
+        
+        console.log("fallback_prompt", fallback_prompt);
+        console.log("cachedReference", cachedReference);
+
+        // Call Gemini API
+        const response = await fetch('https://api.aryankeluskar.com/api/gemini', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: fallback_prompt
+              }]
+            }]
+          })
+        });
+
+        let finalResponse = await response.json();
+        console.log("finalResponse", finalResponse);
+
+        let title = finalResponse.candidates[0].content.parts[0].text.trim();  
+
+        console.log("title", title);
+        
+        // Find matching reference
+        let matchingReference = null;
+        for (const reference of cachedReference) {
+          // console.log("1title", reference.citedPaper.title);
+          // console.log("2title", title);
+          if (reference.citedPaper.title === title) {
+            console.log("found reference", reference);
+            matchingReference = reference;
+            break;
+          }
+        }
+
+        // HERE
+      }
+
       // Make this an immediately invoked async function to allow using await
       (async () => {
         if (parsedInfo) {
@@ -632,26 +640,9 @@ ${pageText}`
             await processAndQueryArXiv(parsedInfo, "BibTeX parsing");
           } catch (error) {
             console.log(
-              "ArXiv API failed or returned empty results, trying Perplexity fallback..."
+              "ArXiv API failed or returned empty results, trying Semantic Scholar fallback..."
             );
-            
-            try {
-              // Try to get paper info from Perplexity as a fallback
-              const perplexityTitle = await getPaperInfoFromPerplexity(
-                parsedInfo.author,
-                parsedInfo.year, 
-                parsedInfo.title
-              );
-              
-              if (perplexityTitle) {
-                await processAndQueryArXiv(perplexityTitle, "Perplexity fallback");
-              } else {
-                fail(currentElement, "Failed to get paper info from both ArXiv and Perplexity");
-              }
-            } catch (perplexityError) {
-              console.error("Perplexity fallback failed:", perplexityError);
-              fail(currentElement, "Both ArXiv and Perplexity lookups failed");
-            }
+            await getGeminiFallbackReference(paperId, linkHref);
           }
         } else {
           // AI-powered fallback path
@@ -659,14 +650,7 @@ ${pageText}`
 
           // Extract title using AI - properly handle the Promise
           try {
-            const extractedTitle = await extractPaperTitleFromLink(linkHref, surroundingText, currentElement);
-            if (!extractedTitle) {
-              console.log("No title could be extracted, skipping popup");
-              return;
-            }
-
-            // Process the extracted title
-            await processAndQueryArXiv(extractedTitle, "AI extraction");
+            await getGeminiFallbackReference(paperId, linkHref);
           } catch (error) {
             console.error("Error in title extraction fallback:", error);
             fail(currentElement, "Title extraction fallback failed");
@@ -713,37 +697,7 @@ ${pageText}`
         }
 
         if (!found) {
-          // Try Perplexity as fallback only if we have parsed info
-          if (this.titleSource === "BibTeX parsing" && parsedInfo) {
-            try {
-              const perplexityTitle = await getPaperInfoFromPerplexity(
-                parsedInfo.author,
-                parsedInfo.year,
-                parsedInfo.title
-              );
-
-              if (perplexityTitle) {
-                console.log(
-                  "Successfully got paper info from Perplexity fallback"
-                );
-                processAndQueryArXiv(perplexityTitle, "Perplexity fallback");
-              } else {
-                fail(
-                  this,
-                  "Failed to get paper info from both ArXiv and Perplexity"
-                );
-              }
-            } catch (perplexityError) {
-              console.error(
-                "Perplexity fallback also failed:",
-                perplexityError
-              );
-              fail(this, "Both ArXiv and Perplexity lookups failed");
-            }
-          } else {
-            // For AI extraction path, just fail since we already tried our best match
-            fail(this, "No matching entries found for this reference");
-          }
+          await getGeminiFallbackReference(paperId, linkHref);
         }
 
         let matchingEntry = null;
