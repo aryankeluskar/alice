@@ -50,9 +50,12 @@ async function fetchWithRetry(url, options, maxRetries = 3) {
   let lastError;
 
   // Add CORS proxy for ArXiv API requests if needed
-  if (url.startsWith('http://export.arxiv.org') && !url.startsWith('https://')) {
+  if (
+    url.startsWith("http://export.arxiv.org") &&
+    !url.startsWith("https://")
+  ) {
     // Use HTTPS instead of HTTP
-    url = url.replace('http://', 'https://');
+    url = url.replace("http://", "https://");
     console.log(`Converted ArXiv API URL to HTTPS: ${url}`);
   }
 
@@ -80,12 +83,12 @@ async function fetchWithRetry(url, options, maxRetries = 3) {
       return response;
     } catch (error) {
       lastError = error;
-      
+
       // Log more details about the error
       console.error(`Fetch error (attempt ${retries + 1}/${maxRetries}):`, {
         url,
         errorMessage: error.message,
-        errorType: error.name
+        errorType: error.name,
       });
 
       if (retries === maxRetries - 1) {
@@ -106,34 +109,36 @@ async function fetchWithRetry(url, options, maxRetries = 3) {
 
 function initializeArxivInfo(pdfDocument) {
   // Check if jQuery is loaded, if not, load it dynamically
-  if (typeof jQuery === 'undefined' || typeof $ === 'undefined') {
+  if (typeof jQuery === "undefined" || typeof $ === "undefined") {
     console.log("jQuery not loaded, loading it now...");
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       // Array of paths to try for loading jQuery
       const jqueryPaths = [];
-      
+
       // Try to detect if we're in a Chrome extension context
-      const isExtension = typeof chrome !== 'undefined' && chrome.runtime;
-      
+      const isExtension = typeof chrome !== "undefined" && chrome.runtime;
+
       if (isExtension) {
         // Chrome extension paths
         try {
           // This is where jQuery should be in the extension
-          jqueryPaths.push(chrome.runtime.getURL('content/web/jquery-3.6.0.min.js'));
+          jqueryPaths.push(
+            chrome.runtime.getURL("content/web/jquery-3.6.0.min.js")
+          );
         } catch (e) {
           console.error("Failed to get Chrome extension URL:", e);
         }
       }
-      
+
       // Add additional potential paths
-      jqueryPaths.push('jquery-3.6.0.min.js'); // Relative to current page
-      jqueryPaths.push('/web/jquery-3.6.0.min.js'); // From root
-      jqueryPaths.push('../web/jquery-3.6.0.min.js'); // Up one directory
-      jqueryPaths.push('./jquery-3.6.0.min.js'); // Explicit current directory
-      
+      jqueryPaths.push("jquery-3.6.0.min.js"); // Relative to current page
+      jqueryPaths.push("/web/jquery-3.6.0.min.js"); // From root
+      jqueryPaths.push("../web/jquery-3.6.0.min.js"); // Up one directory
+      jqueryPaths.push("./jquery-3.6.0.min.js"); // Explicit current directory
+
       // Log all paths we're going to try
       console.log("Will try loading jQuery from paths:", jqueryPaths);
-      
+
       // Function to try loading from the next path in the array
       function tryNextPath(index) {
         if (index >= jqueryPaths.length) {
@@ -141,28 +146,31 @@ function initializeArxivInfo(pdfDocument) {
           resolve(null);
           return;
         }
-        
+
         const path = jqueryPaths[index];
-        console.log(`Trying to load jQuery from path (${index + 1}/${jqueryPaths.length}):`, path);
-        
-        const script = document.createElement('script');
+        console.log(
+          `Trying to load jQuery from path (${index + 1}/${jqueryPaths.length}):`,
+          path
+        );
+
+        const script = document.createElement("script");
         script.src = path;
-        
-        script.onload = function() {
+
+        script.onload = function () {
           console.log(`jQuery loaded successfully from path: ${path}`);
           // Now that jQuery is loaded, call initializeArxivInfo again
           setTimeout(() => resolve(initializeArxivInfo(pdfDocument)), 0);
         };
-        
-        script.onerror = function() {
+
+        script.onerror = function () {
           console.error(`Failed to load jQuery from path: ${path}`);
           // Try the next path
           tryNextPath(index + 1);
         };
-        
+
         document.head.appendChild(script);
       }
-      
+
       // Start trying from the first path
       tryNextPath(0);
     });
@@ -170,11 +178,11 @@ function initializeArxivInfo(pdfDocument) {
 
   // jQuery is available, proceed with initialization
   console.log("Initializing ArXiv info with jQuery available");
-  
+
   // Initialize mouse tracking variables
   let isMouseOverLink = false;
   let isMouseOverPopup = false;
-  
+
   // current implementation calls this upon every viewer render,
   // so turn off callback before adding another one
   $("a").off();
@@ -185,7 +193,7 @@ function initializeArxivInfo(pdfDocument) {
   let popupHoverTimeout = null;
 
   let currentScaleFactor = 1;
-  
+
   // Add a CSS variable to the document with the scale factor
   const updateScaleFactor = () => {
     try {
@@ -193,30 +201,39 @@ function initializeArxivInfo(pdfDocument) {
       const container = document.querySelector(".pdfViewer .page");
       if (container) {
         const computedStyle = window.getComputedStyle(container);
-        const scaleFactor = computedStyle.getPropertyValue('--total-scale-factor') || "1";
+        const scaleFactor =
+          computedStyle.getPropertyValue("--total-scale-factor") || "1";
         currentScaleFactor = parseFloat(scaleFactor);
-        
+
         // Calculate a more conservative scale factor for spacing
         // This formula ensures that spacing scales more gradually than elements
         // At scale 1, space-scale-factor = 1
         // At larger/smaller scales, space-scale-factor changes more conservatively
         const spaceScaleFactor = currentScaleFactor * 0.7 + 0.3;
-        
+
         // Apply the space scale factor as a CSS variable
-        document.documentElement.style.setProperty('--space-scale-factor', spaceScaleFactor);
-        
+        document.documentElement.style.setProperty(
+          "--space-scale-factor",
+          spaceScaleFactor
+        );
+
         // We don't need to set the total-scale-factor as PDF.js already sets it on the page
         // We just need to make sure our popup is aware of it
-        console.log("Current scale factor:", currentScaleFactor, "Space scale factor:", spaceScaleFactor);
+        console.log(
+          "Current scale factor:",
+          currentScaleFactor,
+          "Space scale factor:",
+          spaceScaleFactor
+        );
       }
     } catch (err) {
       console.error("Error updating scale factor:", err);
     }
   };
-  
+
   // Initial scale factor setup
   updateScaleFactor();
-  
+
   // Listen for scale changes in the PDF viewer
   const eventBus = PDFViewerApplication.eventBus;
   if (eventBus) {
@@ -224,7 +241,7 @@ function initializeArxivInfo(pdfDocument) {
       // Update scale factor when zoom changes
       setTimeout(() => {
         updateScaleFactor();
-        
+
         // If we have an active popup, close and reopen it to ensure proper scaling
         if (activePopup && activeLink) {
           const currentLink = activeLink;
@@ -232,25 +249,27 @@ function initializeArxivInfo(pdfDocument) {
           activePopup.remove();
           activePopup = null;
           activeLink = null;
-          
+
           // Trigger mouseenter on the link to recreate the popup with updated scale
-          $(currentLink).trigger('mouseenter');
+          $(currentLink).trigger("mouseenter");
         }
       }, 100); // Small delay to ensure CSS has updated
     });
   }
 
   // Add a click event on the document to close popups when clicking outside
-  $(document).on('click', function(e) {
+  $(document).on("click", function (e) {
     // If the user is selecting text, don't close the popup
     if (window.getSelection && window.getSelection().toString().length > 0) {
       return;
     }
-    
+
     // If we have an active popup and the click is outside the popup and its trigger link
-    if (activePopup && 
-        !$(e.target).closest(activePopup).length && 
-        (!activeLink || !$(e.target).closest($(activeLink)).length)) {
+    if (
+      activePopup &&
+      !$(e.target).closest(activePopup).length &&
+      (!activeLink || !$(e.target).closest($(activeLink)).length)
+    ) {
       // Remove the popup
       activePopup.remove();
       // Reset active variables
@@ -260,19 +279,19 @@ function initializeArxivInfo(pdfDocument) {
   });
 
   $("a").on({
-    mouseenter: function() {
+    mouseenter: function () {
       console.log($(this).attr("href"));
 
       // Extract paper ID from current URL
       const currentUrl = window.location.href;
-      let paperId = '';
-      
+      let paperId = "";
+
       // Extract paper ID based on URL pattern
-      if (currentUrl.includes('arxiv.org')) {
+      if (currentUrl.includes("arxiv.org")) {
         // For arXiv URLs like .../1810.04805
         const match = currentUrl.match(/\/(\d+\.\d+)/);
         if (match) paperId = match[1];
-      } else if (currentUrl.includes('biorxiv.org')) {
+      } else if (currentUrl.includes("biorxiv.org")) {
         // For bioRxiv URLs like .../10.1101/2025.04.16.649082v1
         const match = currentUrl.match(/\/(\d+\.\d+\/[\d.]+v\d)/);
         if (match) paperId = match[1];
@@ -288,12 +307,19 @@ function initializeArxivInfo(pdfDocument) {
       console.log("Extracted paper ID:", paperId);
 
       // Check if we already have data for this paper ID in localStorage
-      const cachedPaperDataString = localStorage.getItem(`paper_data_${paperId}`);
-      
+      const cachedPaperDataString = localStorage.getItem(
+        `paper_data_${paperId}`
+      );
+
       if (cachedPaperDataString) {
         try {
           const cachedPaperData = JSON.parse(cachedPaperDataString);
-          console.log("Found cached paper data for", paperId, ":", cachedPaperData);
+          console.log(
+            "Found cached paper data for",
+            paperId,
+            ":",
+            cachedPaperData
+          );
           // **TODO:** Use cachedPaperData to populate the popup later
         } catch (e) {
           console.error("Error parsing cached paper data:", e);
@@ -303,7 +329,11 @@ function initializeArxivInfo(pdfDocument) {
           fetchDataForPaper(paperId);
         }
       } else {
-        console.log("No cached data found for paper ID:", paperId, ". Fetching fresh data.");
+        console.log(
+          "No cached data found for paper ID:",
+          paperId,
+          ". Fetching fresh data."
+        );
         // Fetch fresh data (extract title, then get Semantic Scholar info)
         fetchDataForPaper(paperId);
       }
@@ -314,8 +344,13 @@ function initializeArxivInfo(pdfDocument) {
       }
 
       // Check if activePopup exists but is no longer in the DOM
-      if (activePopup && !$.contains(document.documentElement, activePopup[0])) {
-        console.log("Active popup no longer in DOM, resetting active variables");
+      if (
+        activePopup &&
+        !$.contains(document.documentElement, activePopup[0])
+      ) {
+        console.log(
+          "Active popup no longer in DOM, resetting active variables"
+        );
         activePopup = null;
         activeLink = null;
       }
@@ -345,7 +380,7 @@ function initializeArxivInfo(pdfDocument) {
       try {
         // Get the current scale factor directly rather than parsing the transform
         const zoomMultiplier = currentScaleFactor || 1;
-        
+
         const leftPixels =
           parseFloat($(this).parent().css("left")) * zoomMultiplier;
         const topPixels =
@@ -469,35 +504,48 @@ function initializeArxivInfo(pdfDocument) {
       const parsedInfo = parseBibtexReference(bibtexRef);
 
       async function getGeminiFallbackReference(paperId, linkHref) {
-        const cachedPaperDataString = localStorage.getItem(`paper_data_${paperId}`);
+        const cachedPaperDataString = localStorage.getItem(
+          `paper_data_${paperId}`
+        );
         const cachedReference = JSON.parse(cachedPaperDataString)["references"];
-        const fallback_prompt = "From the given list of references, which reference do you predict the citation hyperlink " + linkHref.split("cite")[1] + " refers to? \n\n Return a string with the EXACT paper title found in the list. ONLY RETURN THE TITLE EXACTLY AS IT IS IN THE LIST, NOTHING ELSE. \n\n List of references: " + JSON.stringify(cachedReference);
-        
+        const fallback_prompt =
+          "From the given list of references, which reference do you predict the citation hyperlink " +
+          linkHref.split("cite")[1] +
+          " refers to? \n\n Return a string with the EXACT paper title found in the list. ONLY RETURN THE TITLE EXACTLY AS IT IS IN THE LIST, NOTHING ELSE. \n\n List of references: " +
+          JSON.stringify(cachedReference);
+
         console.log("fallback_prompt", fallback_prompt);
         console.log("cachedReference", cachedReference);
 
         // Call Gemini API
-        const response = await fetch('https://api.aryankeluskar.com/api/gemini', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: fallback_prompt
-              }]
-            }]
-          })
-        });
+        const response = await fetch(
+          "https://api.aryankeluskar.com/api/gemini",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    {
+                      text: fallback_prompt,
+                    },
+                  ],
+                },
+              ],
+            }),
+          }
+        );
 
         let finalResponse = await response.json();
         console.log("finalResponse", finalResponse);
 
-        let title = finalResponse.candidates[0].content.parts[0].text.trim();  
+        let title = finalResponse.candidates[0].content.parts[0].text.trim();
 
         console.log("title", title);
-        
+
         // Find matching reference
         let matchingReference = null;
         for (const reference of cachedReference) {
@@ -516,39 +564,52 @@ function initializeArxivInfo(pdfDocument) {
             // Fetch data from Semantic Scholar API
             const apiUrl = `https://api.semanticscholar.org/graph/v1/paper/${semanticScholarId}?fields=title,abstract,year,openAccessPdf,authors`;
             const response = await fetch(apiUrl);
-            
+
             if (!response.ok) {
-              throw new Error(`Semantic Scholar API request failed: ${response.status}`);
+              throw new Error(
+                `Semantic Scholar API request failed: ${response.status}`
+              );
             }
-            
+
             const paperData = await response.json();
             console.log("Semantic Scholar data", paperData);
-            
+
             // Create ArxivInfo object with the data
-            const paperUrl = paperData.openAccessPdf?.url || matchingReference.citedPaper.url || '';
-            const authorsString = paperData.authors?.map(author => author.name).join(', ') || '';
-            
+            const paperUrl =
+              paperData.openAccessPdf?.url ||
+              matchingReference.citedPaper.url ||
+              "";
+            const authorsString =
+              paperData.authors?.map(author => author.name).join(", ") || "";
+
             const arxivInfo = new ArxivInfo(
               paperData.title,
               authorsString,
-              paperData.year?.toString() || '',
-              paperData.abstract || '',
+              paperData.year?.toString() || "",
+              paperData.abstract || "",
               paperUrl
             );
-            
+
             // Set the current element's data for the popup
             currentElement.dataset.title = arxivInfo.title;
             currentElement.dataset.authors = arxivInfo.authors;
             currentElement.dataset.year = arxivInfo.year;
             currentElement.dataset.abstract = arxivInfo.abstract;
             currentElement.dataset.link = arxivInfo.link;
-            
+
             // Success message
-            console.log("Successfully retrieved paper data from Semantic Scholar", arxivInfo);
-            
+            console.log(
+              "Successfully retrieved paper data from Semantic Scholar",
+              arxivInfo
+            );
+
             // Create XML representation
             const currentDate = new Date().toISOString();
-            const xmlDoc = document.implementation.createDocument("http://www.w3.org/2005/Atom", "entry", null);
+            const xmlDoc = document.implementation.createDocument(
+              "http://www.w3.org/2005/Atom",
+              "entry",
+              null
+            );
             const entry = xmlDoc.documentElement;
 
             // Add namespace
@@ -580,7 +641,7 @@ function initializeArxivInfo(pdfDocument) {
             entry.appendChild(summaryElement);
 
             // Create and append author elements
-            const authors = arxivInfo.authors.split(', ');
+            const authors = arxivInfo.authors.split(", ");
             authors.forEach(authorName => {
               const authorElement = xmlDoc.createElement("author");
               const nameElement = xmlDoc.createElement("name");
@@ -599,7 +660,10 @@ function initializeArxivInfo(pdfDocument) {
             // Create PDF link (assuming PDF URL is same as HTML but with /pdf/ instead of /abs/)
             const pdfLink = xmlDoc.createElement("link");
             pdfLink.setAttribute("title", "pdf");
-            pdfLink.setAttribute("href", arxivInfo.link.replace("/abs/", "/pdf/"));
+            pdfLink.setAttribute(
+              "href",
+              arxivInfo.link.replace("/abs/", "/pdf/")
+            );
             pdfLink.setAttribute("rel", "related");
             pdfLink.setAttribute("type", "application/pdf");
             entry.appendChild(pdfLink);
@@ -613,10 +677,12 @@ function initializeArxivInfo(pdfDocument) {
             currentElement.dataset.xmlRepresentation = xmlString;
 
             return entry;
-
           } catch (error) {
             console.error("Error fetching Semantic Scholar data:", error);
-            fail(currentElement, "Failed to fetch paper details from Semantic Scholar");
+            fail(
+              currentElement,
+              "Failed to fetch paper details from Semantic Scholar"
+            );
           }
         } else {
           console.log("No matching reference found or missing paper ID");
@@ -799,7 +865,10 @@ function initializeArxivInfo(pdfDocument) {
                 .startsWith(title)
             ) {
               if (matchingEntry) {
-                let result = await getGeminiFallbackReference(paperId, linkHref);
+                let result = await getGeminiFallbackReference(
+                  paperId,
+                  linkHref
+                );
                 if (result) {
                   matchingEntry = result;
                 }
@@ -823,8 +892,6 @@ function initializeArxivInfo(pdfDocument) {
           fail(this, "No matching entries found for this reference");
           return;
         }
-
-        
 
         console.log("matchingEntry", matchingEntry);
 
@@ -1317,42 +1384,42 @@ function initializeArxivInfo(pdfDocument) {
 
         // Add hover state tracking for the popup
         $popup.on({
-          mouseenter: function() {
+          mouseenter: function () {
             isMouseOverPopup = true;
           },
-          mouseleave: function() {
+          mouseleave: function () {
             isMouseOverPopup = false;
             checkShouldClosePopup();
           },
-          click: function(e) {
+          click: function (e) {
             // Prevent clicks on the popup from closing it
             e.stopPropagation();
           },
-          mousedown: function(e) {
+          mousedown: function (e) {
             // Allow text selection to work properly
             // Don't stop propagation for mousedown events that might start text selection
-            if (e.target.closest('.tipsy-inner')) {
+            if (e.target.closest(".tipsy-inner")) {
               // Don't do anything special, allow default behavior for text selection
               return true;
             }
             e.stopPropagation();
-          }
+          },
         });
-        
+
         // Add hover state tracking for the link
         $(this).on({
-          mouseenter: function() {
+          mouseenter: function () {
             isMouseOverLink = true;
           },
-          mouseleave: function() {
+          mouseleave: function () {
             isMouseOverLink = false;
             // Give a small delay before checking to avoid flickering
             setTimeout(() => {
               checkShouldClosePopup();
             }, 100);
-          }
+          },
         });
-        
+
         // Function to check if popup should close
         function checkShouldClosePopup() {
           setTimeout(() => {
@@ -1367,8 +1434,8 @@ function initializeArxivInfo(pdfDocument) {
 
         // Function to render markdown content
         function renderMarkdown(text) {
-          if (!text) return '';
-          
+          if (!text) return "";
+
           // Custom markdown to HTML converter
           function markdownToHtml(markdown) {
             // Escape HTML
@@ -1380,87 +1447,120 @@ function initializeArxivInfo(pdfDocument) {
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
             }
-            
+
             let html = markdown;
-            
+
             // Process code blocks first (```)
             html = html.replace(/```([^`]+)```/g, (match, p1) => {
               return `<pre><code>${escapeHtml(p1.trim())}</code></pre>`;
             });
-            
+
             // Process inline code (`)
             html = html.replace(/`([^`]+)`/g, (match, p1) => {
               return `<code>${escapeHtml(p1)}</code>`;
             });
-            
+
             // Headers (# Heading)
-            html = html.replace(/^### (.*$)/gm, '<h3 style="margin-bottom: calc(12px * var(--space-scale-factor));">$1 \n\n </h3>');
-            html = html.replace(/^## (.*$)/gm, '<h2 style="margin-bottom: calc(12px * var(--space-scale-factor));">$1 \n\n </h2>');
-            html = html.replace(/^# (.*$)/gm, '<h1 style="margin-bottom: calc(12px * var(--space-scale-factor));">$1 \n\n </h1>');
-            
+            html = html.replace(
+              /^### (.*$)/gm,
+              '<h3 style="margin-bottom: calc(12px * var(--space-scale-factor));">$1 \n\n </h3>'
+            );
+            html = html.replace(
+              /^## (.*$)/gm,
+              '<h2 style="margin-bottom: calc(12px * var(--space-scale-factor));">$1 \n\n </h2>'
+            );
+            html = html.replace(
+              /^# (.*$)/gm,
+              '<h1 style="margin-bottom: calc(12px * var(--space-scale-factor));">$1 \n\n </h1>'
+            );
+
             // Bold (**text**)
-            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            
+            html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+
             // Italic (*text*)
-            html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
-            
+            html = html.replace(/\*(.*?)\*/g, "<em>$1</em>");
+
             // Line breaks
-            html = html.replace(/\n$/gm, ' <br>');
-            
+            html = html.replace(/\n$/gm, " <br>");
+
             // Unordered lists
-            html = html.replace(/^\s*[\-\*]\s+(.*$)/gm, '<li>$1</li>');
-            html = html.replace(/(<li>.*<\/li>)/s, ' <div style="font-size: calc(5px * var(--total-scale-factor));">‎</div> <ul>$1</ul>');
-            
+            html = html.replace(/^\s*[\-\*]\s+(.*$)/gm, "<li>$1</li>");
+            html = html.replace(
+              /(<li>.*<\/li>)/s,
+              ' <div style="font-size: calc(5px * var(--total-scale-factor));">‎</div> <ul>$1</ul>'
+            );
+
             // Ordered lists
-            html = html.replace(/^\s*\d+\.\s+(.*$)/gm, '<li>$1</li>');
-            html = html.replace(/(<li>.*<\/li>)/s, '<ol style="list-style-position: inside; padding-left: 0;">$1</ol>');
-            
+            html = html.replace(/^\s*\d+\.\s+(.*$)/gm, "<li>$1</li>");
+            html = html.replace(
+              /(<li>.*<\/li>)/s,
+              '<ol style="list-style-position: inside; padding-left: 0;">$1</ol>'
+            );
+
             // Blockquotes
-            html = html.replace(/^\>\s(.*$)/gm, '<blockquote>$1</blockquote>');
-            
+            html = html.replace(/^\>\s(.*$)/gm, "<blockquote>$1</blockquote>");
+
             // Links [text](url)
-            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
-            
-            // Paragraphs - wrap any remaining newline-separated content 
-            html = html.replace(/^([^<].*[^>])$/gm, '<p>$1</p>');
-            
+            html = html.replace(
+              /\[([^\]]+)\]\(([^)]+)\)/g,
+              '<a href="$2">$1</a>'
+            );
+
+            // Paragraphs - wrap any remaining newline-separated content
+            html = html.replace(/^([^<].*[^>])$/gm, "<p>$1</p>");
+
             // Clean up any remaining newlines and extra paragraph tags
-            html = html.replace(/<\/p>\s*<p>/g, '</p><p>');
-            
+            html = html.replace(/<\/p>\s*<p>/g, "</p><p>");
+
             return html;
           }
-          
+
           // Function to format the main points as bulleted list
           function formatMainPoints(mainPoints) {
             // Convert markdown to HTML first
             const htmlContent = markdownToHtml(mainPoints);
-            
+
             // If it already has list items with proper bullet style, just return it
-            if (htmlContent.includes('<li') && !htmlContent.includes('list-style-type: decimal')) {
+            if (
+              htmlContent.includes("<li") &&
+              !htmlContent.includes("list-style-type: decimal")
+            ) {
               return htmlContent;
             }
-            
+
             // Otherwise, split the content and create list items with bullet style
-            const points = mainPoints.split(/\n\s*[\*\-•]\s+|\n\s*\d+\.\s+/).filter(point => point.trim());
-            
+            const points = mainPoints
+              .split(/\n\s*[\*\-•]\s+|\n\s*\d+\.\s+/)
+              .filter(point => point.trim());
+
             if (points.length === 0) {
               // If no bullet points detected, try splitting by newlines
-              const lines = mainPoints.split('\n').filter(line => line.trim());
-              const listItems = lines.map(line => `<li style="text-indent: -1.2em; padding-left: 1.2em; margin-bottom: 10px; list-style-type: disc; margin-left: 5px;">${markdownToHtml(line.trim())}</li>`).join('');
+              const lines = mainPoints.split("\n").filter(line => line.trim());
+              const listItems = lines
+                .map(
+                  line =>
+                    `<li style="text-indent: -1.2em; padding-left: 1.2em; margin-bottom: 10px; list-style-type: disc; margin-left: 5px;">${markdownToHtml(line.trim())}</li>`
+                )
+                .join("");
               return `<ul style="padding-left: 10px; margin-top: 0;">${listItems}</ul>`;
             }
-            
+
             // Always use disc bullets for consistency
-            const listItems = points.map(point => `<li style="text-indent: -1.2em; padding-left: 1.2em; margin-bottom: 10px; list-style-type: disc; margin-left: 5px;">${markdownToHtml(point.trim())}</li>`).join('');
+            const listItems = points
+              .map(
+                point =>
+                  `<li style="text-indent: -1.2em; padding-left: 1.2em; margin-bottom: 10px; list-style-type: disc; margin-left: 5px;">${markdownToHtml(point.trim())}</li>`
+              )
+              .join("");
             return `<ul style="padding-left: 10px; margin-top: 1em !important;">${listItems}</ul>`;
           }
-          
+
           // Check if the content is JSON format (from AI responses)
           try {
             const jsonContent = JSON.parse(text);
 
             console.log("JSON content:", jsonContent);
-            
+
             if (jsonContent.mainPoints && jsonContent.conciseSummary) {
               // Format JSON content to match the screenshot style
               return `
@@ -1476,7 +1576,7 @@ function initializeArxivInfo(pdfDocument) {
           } catch (e) {
             // Not JSON, continue with normal markdown processing
           }
-          
+
           return markdownToHtml(text);
         }
 
@@ -1555,7 +1655,8 @@ function initializeArxivInfo(pdfDocument) {
           }
 
           // Use our proxy API endpoint instead of calling Gemini directly
-          const geminiProxyEndpoint = "https://api.aryankeluskar.com/api/gemini";
+          const geminiProxyEndpoint =
+            "https://api.aryankeluskar.com/api/gemini";
 
           // Improved system prompt with clearer differentiation between main points and summary
           let systemPrompt =
@@ -1676,7 +1777,7 @@ function initializeArxivInfo(pdfDocument) {
           async function (e) {
             e.stopPropagation();
             e.preventDefault(); // Prevent default behavior
-            
+
             console.log("Summary/Abstract button clicked");
 
             // Mark that the button was clicked to prevent popup from closing
@@ -1754,10 +1855,7 @@ function initializeArxivInfo(pdfDocument) {
 
                     const xmlData = await apiResponse.text();
                     const parser = new DOMParser();
-                    const xmlDoc = parser.parseFromString(
-                      xmlData,
-                      "text/xml"
-                    );
+                    const xmlDoc = parser.parseFromString(xmlData, "text/xml");
 
                     // Extract summary and other info from the XML
                     const summary =
@@ -1811,9 +1909,8 @@ function initializeArxivInfo(pdfDocument) {
                     );
 
                     // Process response
-                    llmSummaryContent = await processGeminiResponse(
-                      geminiResult
-                    );
+                    llmSummaryContent =
+                      await processGeminiResponse(geminiResult);
 
                     console.log("LLM summary content:", llmSummaryContent);
 
@@ -1881,11 +1978,14 @@ function initializeArxivInfo(pdfDocument) {
           async function (e) {
             e.stopPropagation();
             e.preventDefault(); // Prevent default behavior
-            
+
             console.log("Code button clicked");
 
             // Visual feedback - add active state to this button, remove from others
-            $(this).addClass("active").siblings(".alice-toggle").removeClass("active");
+            $(this)
+              .addClass("active")
+              .siblings(".alice-toggle")
+              .removeClass("active");
 
             // Mark that the button was clicked to prevent popup from closing
             isButtonClicked = true;
@@ -1906,24 +2006,29 @@ function initializeArxivInfo(pdfDocument) {
             if (!codeLoaded) {
               isProcessing = true;
               const codeContentDiv = $(`#${popupId}-code-content .tipsy-code`);
-              
+
               // Show loading state
-              codeContentDiv.html("<div class='code-loading'>Loading code examples...</div>");
-              
+              codeContentDiv.html(
+                "<div class='code-loading'>Loading code examples...</div>"
+              );
+
               try {
                 // Get paper text for generating code implementation
                 const paperText = await fetchPaperText(link);
-                
+
                 if (!paperText) {
                   throw new Error("Could not fetch paper text");
                 }
-                
+
                 // Generate code implementation
-                const codeImplementation = await generateCodeImplementation(paperText, fullTitle);
-                
+                const codeImplementation = await generateCodeImplementation(
+                  paperText,
+                  fullTitle
+                );
+
                 // Store code locally to avoid refetching
                 codeContent = codeImplementation;
-                
+
                 // Update display with code content
                 codeContentDiv.html(`
                   <div class="code-implementation">
@@ -1931,10 +2036,11 @@ function initializeArxivInfo(pdfDocument) {
                     <button class="copy-button">Copy to Clipboard</button>
                   </div>
                 `);
-                
+
                 // Add click handler for copy button
-                codeContentDiv.find(".copy-button").on("click", function() {
-                  navigator.clipboard.writeText(codeImplementation)
+                codeContentDiv.find(".copy-button").on("click", function () {
+                  navigator.clipboard
+                    .writeText(codeImplementation)
                     .then(() => {
                       $(this).text("Copied!");
                       setTimeout(() => {
@@ -1949,7 +2055,7 @@ function initializeArxivInfo(pdfDocument) {
                       }, 2000);
                     });
                 });
-                
+
                 codeLoaded = true;
               } catch (error) {
                 console.error("Error loading code implementation:", error);
@@ -2393,7 +2499,7 @@ Your response should be comprehensive yet concise, focusing on practical impleme
           async function (e) {
             e.stopPropagation();
             e.preventDefault(); // Prevent default behavior
-            
+
             console.log("BibTex button clicked");
 
             // Mark that the button was clicked to prevent popup from closing
@@ -2409,20 +2515,19 @@ Your response should be comprehensive yet concise, focusing on practical impleme
 
             // Toggle active state based on current state
             const isCurrentlyActive = $(this).hasClass("active");
-            
+
             if (isCurrentlyActive) {
               // If already active, toggle back to showing the abstract
               $(this).removeClass("active");
-              
+
               // Show original abstract
               const contentDiv = $(this)
                 .closest(".tipsy-inner")
                 .find(".arxiv_info_content");
               const abstractDiv = contentDiv.find(".arxiv_info_abstract");
-              
+
               // Reset content to original abstract
               abstractDiv.html(abstract);
-              
             } else {
               // Toggle active state to show BibTex
               $(this).addClass("active");
@@ -2458,10 +2563,10 @@ Your response should be comprehensive yet concise, focusing on practical impleme
                 if (arxivIdMatch && arxivIdMatch[1]) {
                   arxivId = arxivIdMatch[1];
                   console.log("Extracted arXiv ID for BibTex:", arxivId);
-                  
+
                   // Fetch BibTex data from API
                   const bibtexData = await fetchBibTexData(arxivId);
-                  
+
                   // Display BibTex with copy button
                   const bibtexHtml = `
                     <div style="position: relative;">
@@ -2469,13 +2574,14 @@ Your response should be comprehensive yet concise, focusing on practical impleme
                       <button id="${popupId}-copy-bibtex" class="alice-toggle" style="position: absolute; bottom: 0; right: 0; padding-left: 10px; padding-right: 10px;">Copy to clipboard</button>
                     </div>
                   `;
-                  
+
                   abstractDiv.html(bibtexHtml);
-                  
+
                   // Add click handler for the copy button
-                  $(`#${popupId}-copy-bibtex`).on("click", function(e) {
+                  $(`#${popupId}-copy-bibtex`).on("click", function (e) {
                     e.stopPropagation();
-                    navigator.clipboard.writeText(bibtexData)
+                    navigator.clipboard
+                      .writeText(bibtexData)
                       .then(() => {
                         const originalText = $(this).text();
                         $(this).text("Copied!");
@@ -2484,15 +2590,19 @@ Your response should be comprehensive yet concise, focusing on practical impleme
                         }, 2000);
                       })
                       .catch(err => {
-                        console.error('Failed to copy text: ', err);
+                        console.error("Failed to copy text: ", err);
                       });
                   });
                 } else {
-                  abstractDiv.html("<div>Could not extract arXiv ID from the link.</div>");
+                  abstractDiv.html(
+                    "<div>Could not extract arXiv ID from the link.</div>"
+                  );
                 }
               } catch (error) {
                 console.error("Error fetching BibTex:", error);
-                abstractDiv.html("<div>Error fetching BibTex information.</div>");
+                abstractDiv.html(
+                  "<div>Error fetching BibTex information.</div>"
+                );
               } finally {
                 isProcessing = false;
               }
@@ -2522,157 +2632,190 @@ Your response should be comprehensive yet concise, focusing on practical impleme
 
 export { initializeArxivInfo };
 
+// Function to fetch all data for a paper (extract title -> get S2 -> store)
+async function fetchDataForPaper(id) {
+  console.log("Attempting to extract title from PDF for paper ID:", id);
+  const pdfDocument = PDFViewerApplication.pdfDocument;
 
-      // Function to fetch all data for a paper (extract title -> get S2 -> store)
-      async function fetchDataForPaper(id) {
-        console.log("Attempting to extract title from PDF for paper ID:", id);
-        const pdfDocument = PDFViewerApplication.pdfDocument;
-        
-        if (pdfDocument) {
-          try {
-            const page = await pdfDocument.getPage(1);
-            const textContent = await page.getTextContent();
-            const pageText = textContent.items.map(item => item.str).join(' ');
-            console.log("Extracted text from first page for", id, ":", pageText.substring(0, 200) + "...");
+  if (pdfDocument) {
+    try {
+      const page = await pdfDocument.getPage(1);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map(item => item.str).join(" ");
+      console.log(
+        "Extracted text from first page for",
+        id,
+        ":",
+        pageText.substring(0, 200) + "..."
+      );
 
-            // Call Gemini API to extract title from the first page text
-            const extractedTitle = await extractTitleWithGemini(pageText);
+      // Call Gemini API to extract title from the first page text
+      const extractedTitle = await extractTitleWithGemini(pageText);
 
-            if (extractedTitle) {
-              console.log("Extracted title from PDF for", id, ":", extractedTitle);
-              // Now fetch Semantic Scholar data using the extracted title
-              await fetchAndStoreSemanticScholarData(extractedTitle, id);
-            } else {
-              console.error("Could not extract title using Gemini for paper ID:", id);
-              // Optionally call fail() here
-              // fail(currentElement, "Failed to extract title from PDF");
-            }
-          } catch (error) {
-            console.error("Error getting page text content or extracting title for", id, ":", error);
-            // Optionally call fail() here
-            // fail(currentElement, "Failed to get PDF text or extract title");
-          }
-        } else {
-          console.log("PDF document not loaded yet for paper ID:", id);
-          // Optionally call fail() here
-          // fail(currentElement, "PDF document not loaded");
-        }
+      if (extractedTitle) {
+        console.log("Extracted title from PDF for", id, ":", extractedTitle);
+        // Now fetch Semantic Scholar data using the extracted title
+        await fetchAndStoreSemanticScholarData(extractedTitle, id);
+      } else {
+        console.error("Could not extract title using Gemini for paper ID:", id);
+        // Optionally call fail() here
+        // fail(currentElement, "Failed to extract title from PDF");
       }
+    } catch (error) {
+      console.error(
+        "Error getting page text content or extracting title for",
+        id,
+        ":",
+        error
+      );
+      // Optionally call fail() here
+      // fail(currentElement, "Failed to get PDF text or extract title");
+    }
+  } else {
+    console.log("PDF document not loaded yet for paper ID:", id);
+    // Optionally call fail() here
+    // fail(currentElement, "PDF document not loaded");
+  }
+}
 
-      // Function to call Gemini API to extract title
-      async function extractTitleWithGemini(pageText) {
-        try {
-          const response = await fetch('https://api.aryankeluskar.com/api/gemini', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              contents: [{
-                parts: [{
-                  text: `Extract only the title of this academic paper. Return ONLY the title, nothing else. If you cannot find a clear title, return NULL.\n\nText from first page:\n${pageText}`
-                }]
-              }]
-            })
-          });
-          const result = await response.json();
-          if (result.candidates && result.candidates[0] && result.candidates[0].content) {
-            const title = result.candidates[0].content.parts[0].text.trim();
-            return (title && title !== 'NULL') ? title : null;
-          }
-          return null;
-        } catch (error) {
-          console.error("Error calling Gemini API for title extraction:", error);
-          return null;
-        }
+// Function to call Gemini API to extract title
+async function extractTitleWithGemini(pageText) {
+  try {
+    const response = await fetch("https://api.aryankeluskar.com/api/gemini", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text: `Extract only the title of this academic paper. Return ONLY the title, nothing else. If you cannot find a clear title, return NULL.\n\nText from first page:\n${pageText}`,
+              },
+            ],
+          },
+        ],
+      }),
+    });
+    const result = await response.json();
+    if (
+      result.candidates &&
+      result.candidates[0] &&
+      result.candidates[0].content
+    ) {
+      const title = result.candidates[0].content.parts[0].text.trim();
+      return title && title !== "NULL" ? title : null;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error calling Gemini API for title extraction:", error);
+    return null;
+  }
+}
+
+// Function to fetch data from Semantic Scholar and store it
+async function fetchAndStoreSemanticScholarData(title, paperId) {
+  console.log(
+    `Fetching Semantic Scholar data for title: "${title}", paper ID: ${paperId}`
+  );
+  try {
+    // First get Semantic Scholar paper ID using title match
+    const matchResponse = await fetchWithRetry(
+      `https://api.semanticscholar.org/graph/v1/paper/search/match?query=${encodeURIComponent(title)}`
+    );
+
+    if (!matchResponse.ok) {
+      if (matchResponse.status === 404) {
+        console.log("Semantic Scholar: Title match not found for", title);
+        // Store minimal data indicating title but no S2 match
+        const minimalData = {
+          title: title,
+          semantic_paper_id: null,
+          references: [],
+        };
+        localStorage.setItem(
+          `paper_data_${paperId}`,
+          JSON.stringify(minimalData)
+        );
+        return; // Stop if no match
+      } else {
+        throw new Error(`Title match failed: ${matchResponse.status}`);
       }
+    }
 
-      // Function to fetch data from Semantic Scholar and store it
-      async function fetchAndStoreSemanticScholarData(title, paperId) {
-        console.log(`Fetching Semantic Scholar data for title: "${title}", paper ID: ${paperId}`);
-        try {
-          // First get Semantic Scholar paper ID using title match
-          const matchResponse = await fetchWithRetry(
-            `https://api.semanticscholar.org/graph/v1/paper/search/match?query=${encodeURIComponent(title)}`
-          );
+    const matchData = await matchResponse.json();
+    const semanticPaperId = matchData.data[0].paperId;
+    console.log(`Semantic Scholar ID found for "${title}": ${semanticPaperId}`);
 
-          if (!matchResponse.ok) {
-            if (matchResponse.status === 404) {
-              console.log("Semantic Scholar: Title match not found for", title);
-              // Store minimal data indicating title but no S2 match
-              const minimalData = { title: title, semantic_paper_id: null, references: [] };
-              localStorage.setItem(`paper_data_${paperId}`, JSON.stringify(minimalData));
-              return; // Stop if no match
-            } else {
-              throw new Error(`Title match failed: ${matchResponse.status}`);
-            }
-          }
+    // Then get references using the Semantic Scholar paper ID
+    const referencesResponse = await fetchWithRetry(
+      `https://api.semanticscholar.org/graph/v1/paper/${semanticPaperId}/references?fields=abstract&offset=0&limit=999`
+    );
 
-          const matchData = await matchResponse.json();
-          const semanticPaperId = matchData.data[0].paperId;
-          console.log(`Semantic Scholar ID found for "${title}": ${semanticPaperId}`);
+    if (!referencesResponse.ok) {
+      throw new Error(`References fetch failed: ${referencesResponse.status}`);
+    }
 
-          // Then get references using the Semantic Scholar paper ID
-          const referencesResponse = await fetchWithRetry(
-            `https://api.semanticscholar.org/graph/v1/paper/${semanticPaperId}/references?fields=abstract&offset=0&limit=999`
-          );
+    const referencesData = await referencesResponse.json();
+    console.log(
+      `Fetched ${referencesData.data ? referencesData.data.length : 0} references for ${semanticPaperId}`
+    );
 
-          if (!referencesResponse.ok) {
-            throw new Error(`References fetch failed: ${referencesResponse.status}`);
-          }
+    // Store title, Semantic Scholar ID, and references together in localStorage
+    const fullPaperData = {
+      title: title,
+      semantic_paper_id: semanticPaperId,
+      references: referencesData.data || [], // Ensure references is always an array
+    };
 
-          const referencesData = await referencesResponse.json();
-          console.log(`Fetched ${referencesData.data ? referencesData.data.length : 0} references for ${semanticPaperId}`);
-
-          // Store title, Semantic Scholar ID, and references together in localStorage
-          const fullPaperData = {
-            title: title,
-            semantic_paper_id: semanticPaperId,
-            references: referencesData.data || [] // Ensure references is always an array
-          };
-
-          localStorage.setItem(`paper_data_${paperId}`, JSON.stringify(fullPaperData));
-          console.log("Stored full paper data for", paperId, ":", fullPaperData);
-          // **TODO:** Use fullPaperData to populate the popup now that it's fetched
-
-        } catch (error) {
-          console.error("Error fetching or storing Semantic Scholar data for", paperId, ":", error);
-           // Optionally call fail() here
-           // fail(currentElement, "Failed to fetch Semantic Scholar data");
-        }
-      }
-
- 
+    localStorage.setItem(
+      `paper_data_${paperId}`,
+      JSON.stringify(fullPaperData)
+    );
+    console.log("Stored full paper data for", paperId, ":", fullPaperData);
+    // **TODO:** Use fullPaperData to populate the popup now that it's fetched
+  } catch (error) {
+    console.error(
+      "Error fetching or storing Semantic Scholar data for",
+      paperId,
+      ":",
+      error
+    );
+    // Optionally call fail() here
+    // fail(currentElement, "Failed to fetch Semantic Scholar data");
+  }
+}
 
 // Helper functions for code generation
 async function fetchPaperText(arxivLink) {
   console.log("Fetching paper text from arXiv link:", arxivLink);
-  
+
   try {
     // Extract the arXiv ID from the link
     const arxivIdMatch = arxivLink.match(/abs\/([^\/]+)/);
     if (!arxivIdMatch || !arxivIdMatch[1]) {
       throw new Error("Could not extract arXiv ID from link");
     }
-    
+
     const arxivId = arxivIdMatch[1];
     console.log("Extracted arXiv ID:", arxivId);
-    
+
     // Use ArXiv API to get paper details
     const apiEndpoint = `http://export.arxiv.org/api/query?id_list=${arxivId}`;
     const apiResponse = await fetchWithRetry(apiEndpoint, {}, 2);
-    
+
     const xmlData = await apiResponse.text();
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlData, "text/xml");
-    
+
     // Extract summary and other details
     const summary = xmlDoc.querySelector("summary")?.textContent || "";
     const title = xmlDoc.querySelector("title")?.textContent || "";
     const authors = Array.from(xmlDoc.querySelectorAll("author name"))
       .map(el => el.textContent)
       .join(", ");
-    
+
     // Combine the data
     return `Title: ${title}\nAuthors: ${authors}\n\nAbstract: ${summary}`;
   } catch (error) {
@@ -2683,10 +2826,10 @@ async function fetchPaperText(arxivLink) {
 
 async function generateCodeImplementation(paperText, title) {
   console.log("Generating code implementation for:", title);
-  
+
   // This is a simplified implementation
   // In a real-world scenario, you would call an AI service here
-  
+
   // For now, return a placeholder implementation
   return `# Implementation for ${title}
 
@@ -2719,5 +2862,3 @@ Note: This is a simplified implementation. In a real scenario, the code would be
 specifically generated based on the paper's algorithms and methodologies.
 `;
 }
-
-
