@@ -152,7 +152,7 @@ function fetchCitationInfo(pdfDocument) {
           "--space-scale-factor",
           spaceScaleFactor
         );
-        
+
         // console.log(
         //   "Current scale factor:",
         //   currentScaleFactor,
@@ -214,9 +214,9 @@ function fetchCitationInfo(pdfDocument) {
 
   $("a").on({
     mouseenter: function () {
-      console.log("-"*30);
+      console.log("-" * 30);
       console.log("Finding paper data for:", $(this).attr("href"));
-      console.log("-"*30);
+      console.log("-" * 30);
 
       // Create a unique ID for this popup to avoid selector conflicts
       const popupId = `popup-${Math.random().toString(36).substr(2, 9)}`;
@@ -458,11 +458,11 @@ function fetchCitationInfo(pdfDocument) {
                 tipsyDirection,
                 matchingEntry,
                 currentScaleFactor,
-                onPopupCreated: ($popup) => {
+                onPopupCreated: $popup => {
                   // Store the current element and popup as active
                   activeLink = this;
                   activePopup = $popup;
-                }
+                },
               });
               console.log("Created popup");
             }
@@ -484,11 +484,11 @@ function fetchCitationInfo(pdfDocument) {
                 tipsyDirection,
                 matchingEntry,
                 currentScaleFactor,
-                onPopupCreated: ($popup) => {
+                onPopupCreated: $popup => {
                   // Store the current element and popup as active
                   activeLink = this;
                   activePopup = $popup;
-                }
+                },
               });
               console.log("Created popup");
             }
@@ -552,11 +552,11 @@ function fetchCitationInfo(pdfDocument) {
               tipsyDirection,
               matchingEntry,
               currentScaleFactor,
-              onPopupCreated: ($popup) => {
+              onPopupCreated: $popup => {
                 // Store the current element and popup as active
                 activeLink = this;
                 activePopup = $popup;
-              }
+              },
             });
             console.log("Created popup");
           }
@@ -675,11 +675,11 @@ function fetchCitationInfo(pdfDocument) {
                     tipsyDirection,
                     matchingEntry,
                     currentScaleFactor,
-                    onPopupCreated: ($popup) => {
+                    onPopupCreated: $popup => {
                       // Store the current element and popup as active
                       activeLink = this;
                       activePopup = $popup;
-                    }
+                    },
                   });
                   console.log("Created popup");
                 }
@@ -710,11 +710,11 @@ function fetchCitationInfo(pdfDocument) {
               tipsyDirection,
               matchingEntry,
               currentScaleFactor,
-              onPopupCreated: ($popup) => {
+              onPopupCreated: $popup => {
                 // Store the current element and popup as active
                 activeLink = this;
                 activePopup = $popup;
-              }
+              },
             });
             console.log("Created popup");
           }
@@ -839,11 +839,11 @@ function fetchCitationInfo(pdfDocument) {
           tipsyDirection,
           matchingEntry,
           currentScaleFactor,
-          onPopupCreated: ($popup) => {
+          onPopupCreated: $popup => {
             // Store the current element and popup as active
             activeLink = this;
             activePopup = $popup;
-          }
+          },
         });
 
         console.log("Created popup");
@@ -861,13 +861,13 @@ async function createAndShowPopup({
   currentScaleFactor = 1, // Current scale factor for the UI
   onPopupCreated = null, // Optional callback when popup is created
 }) {
-
   const paperData = {
     title: matchingEntry.getElementsByTagName("title")[0]?.textContent || "",
     authors: Array.from(matchingEntry.getElementsByTagName("author") || [])
       .map(a => a.children[0]?.textContent || "")
       .filter(Boolean),
-    abstract: matchingEntry.getElementsByTagName("summary")[0]?.textContent || "",
+    abstract:
+      matchingEntry.getElementsByTagName("summary")[0]?.textContent || "",
     date: matchingEntry.getElementsByTagName("published")[0]?.textContent || "",
     link: matchingEntry.getElementsByTagName("id")[0]?.textContent || "",
   };
@@ -914,8 +914,7 @@ async function createAndShowPopup({
       // If even the first author has more than 16 words, truncate it
       const excessWordsCount = authorWords.length - 16;
       authorText =
-        authorWords.slice(0, 16).join(" ") +
-        ` and ${excessWordsCount} others`;
+        authorWords.slice(0, 16).join(" ") + ` and ${excessWordsCount} others`;
     }
   }
 
@@ -924,10 +923,9 @@ async function createAndShowPopup({
     month: "short",
     day: "numeric",
   };
-  const dateString = new Intl.DateTimeFormat(
-    "en-US",
-    dateStringOptions
-  ).format(new Date(date));
+  const dateString = new Intl.DateTimeFormat("en-US", dateStringOptions).format(
+    new Date(date)
+  );
 
   // Load required libraries if not already loaded
   if (!window.marked && !$('script[src*="marked"]').length) {
@@ -1107,7 +1105,7 @@ async function createAndShowPopup({
       $popup.remove();
       activePopup = null;
       activeLink = null;
-    }
+    },
   };
 }
 
@@ -1194,7 +1192,8 @@ function setupButtonEventListeners($popup, popupId, state) {
               const parser = new DOMParser();
               const xmlDoc = parser.parseFromString(xmlData, "text/xml");
 
-              const summary = xmlDoc.querySelector("summary")?.textContent || "";
+              const summary =
+                xmlDoc.querySelector("summary")?.textContent || "";
               const title = xmlDoc.querySelector("title")?.textContent || "";
               const authors = Array.from(xmlDoc.querySelectorAll("author name"))
                 .map(el => el.textContent)
@@ -1238,7 +1237,9 @@ function setupButtonEventListeners($popup, popupId, state) {
               containsCode = containsPythonCode(llmSummaryContent);
 
               if (containsCode) {
-                console.log(`Detected code in response, retry ${retryCount + 1}`);
+                console.log(
+                  `Detected code in response, retry ${retryCount + 1}`
+                );
                 retryCount++;
               }
             } while (containsCode && retryCount < 3);
@@ -1292,7 +1293,10 @@ function setupButtonEventListeners($popup, popupId, state) {
 
       console.log("Code button clicked");
 
-      $(this).addClass("active").siblings(".alice-toggle").removeClass("active");
+      $(this)
+        .addClass("active")
+        .siblings(".alice-toggle")
+        .removeClass("active");
 
       isButtonClicked = true;
       setTimeout(() => {
