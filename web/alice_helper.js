@@ -169,11 +169,6 @@ async function getGeminiFallbackReference(paperId, linkHref, currentElement) {
       pdfLink.setAttribute("type", "application/pdf");
       entry.appendChild(pdfLink);
 
-      // Convert to string
-      const serializer = new XMLSerializer();
-      const xmlString = serializer.serializeToString(xmlDoc);
-      console.log("Generated XML:", entry);
-
       return entry;
     } catch (error) {
       console.error("Error fetching Semantic Scholar data:", error);

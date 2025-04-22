@@ -449,6 +449,7 @@ function fetchCitationInfo(pdfDocument) {
               linkHref,
               currentElement
             );
+            console.log("Generated XML:", result);
             if (result) {
               matchingEntry = result;
             }
@@ -461,6 +462,7 @@ function fetchCitationInfo(pdfDocument) {
               linkHref,
               currentElement
             );
+            console.log("Generated XML:", result);
             if (result) {
               matchingEntry = result;
             }
@@ -515,6 +517,7 @@ function fetchCitationInfo(pdfDocument) {
             linkHref,
             currentElement
           );
+          console.log("Generated XML:", result);
           if (result) {
             matchingEntry = result;
           }
@@ -624,6 +627,7 @@ function fetchCitationInfo(pdfDocument) {
                   linkHref,
                   currentElement
                 );
+                console.log("Generated XML:", result);
                 if (result) {
                   matchingEntry = result;
                 }
@@ -645,6 +649,7 @@ function fetchCitationInfo(pdfDocument) {
             linkHref,
             currentElement
           );
+          console.log("Generated XML:", result);
           if (result) {
             matchingEntry = result;
           }
@@ -762,576 +767,655 @@ function fetchCitationInfo(pdfDocument) {
           document.head.appendChild(link);
         }
 
-        // eslint-disable-next-line no-unsanitized/method
-        const htmlString = `
-          <div id="${popupId}" class="tipsy tipsy-${tipsyDirection}" style="font-family: 'Solway', serif;">
-          <div class="tipsy-arrow"></div>
-          <div class="tipsy-inner" style="font-family: 'Solway', serif; padding: calc(10px * var(--total-scale-factor, 1));">
-          ${
-            tipsyDirection.startsWith("n")
-              ? `
-            <!-- Header at top for north orientations -->
-            <div class="arxiv-header" style="margin-bottom: 10px; border-bottom: 2px solid #000; border-spacing: 5px;">  
-              <div class="arxiv-title-row">
-                <div class="arxiv-main-content"> 
-                  <div style="display: flex; align-items: center; gap: calc(10px * var(--space-scale-factor));">
-                    <span class="arxiv-title" style="font-family: 'Solway', serif;font-size: calc(12px * var(--total-scale-factor, 1));">${fullTitle}</span>
-                    <a href="${link}" title="View paper on arXiv" target="_blank" class="arxiv-link" aria-label="View paper on arXiv" style="display: inline-flex; align-items: center;"><img src="images/link-icon.svg" alt="External link to arXiv paper" width="calc(14px * var(--total-scale-factor, 1))" height="calc(14px * var(--total-scale-factor, 1))" style="margin-left: calc(5px * var(--space-scale-factor));"/></a>
-                  </div>
-                  <div class="arxiv-info-row">
-                    <div class="arxiv_info_author" style="font-family: 'Solway', serif;">${authorText}</div>
-                    <div class="arxiv_info_date" style="font-family: 'Solway', serif;">Published on ${dateString}.</div>
-                  </div>
-                </div>
-                <div class="arxiv-controls">
-                  <button class="alice-toggle" style="margin-bottom: 5px; vertical-align: middle;" data-view="abstract">Summary</button>
-                  <button class="alice-toggle" style="margin-bottom: 10px; vertical-align: middle; display: none;" data-view="code">Code</button>
-                  <button class="alice-toggle" style="margin-bottom: 10px; vertical-align: middle;" data-view="bibtex">BibTex</button>
-                </div>
-              </div>
-                ‎  
-            </div>
+        // Extract paper data from matchingEntry
+        const paperData = {
+          title: matchingEntry.getElementsByTagName("title")[0]?.textContent || "",
+          authors: Array.from(matchingEntry.getElementsByTagName("author") || [])
+            .map(a => a.children[0]?.textContent || "")
+            .filter(Boolean),
+          abstract: matchingEntry.getElementsByTagName("summary")[0]?.textContent || "",
+          date: matchingEntry.getElementsByTagName("published")[0]?.textContent || "",
+          link: matchingEntry.getElementsByTagName("id")[0]?.textContent || "",
+        };
 
-            <div class="arxiv_info_content" style="font-family: 'Solway', serif;">
-              <div class="arxiv_info_abstract markdown-content" style="font-family: 'Solway', serif;">${abstract}</div>
-            </div>
-          `
-              : `
-            <!-- Content first for south orientations -->
-            <div class="arxiv_info_content" style="font-family: 'Solway', serif;">
-              <div class="arxiv_info_abstract markdown-content" style="font-family: 'Solway', serif;">${abstract}</div>
-            </div>
-            
-            <div class="arxiv-header" style="margin-top: 10px; border-top: 2px solid #000; border-spacing: 5px;">
-            
-            ‎  
-            
-            <div class="arxiv-title-row">
-                <div class="arxiv-main-content">
-                  <div style="display: flex; align-items: center; gap: calc(10px * var(--space-scale-factor));">
-                    <span class="arxiv-title" style="font-family: 'Solway', serif;font-size: calc(12px * var(--total-scale-factor, 1));">${fullTitle}</span>
-                    <a href="${link}" title="View paper on arXiv" target="_blank" class="arxiv-link" aria-label="View paper on arXiv"><img src="images/link-icon.svg" alt="External link to arXiv paper" width="calc(14px * var(--total-scale-factor, 1))" height="calc(14px * var(--total-scale-factor, 1))"/></a>
-                  </div>
-                  <div class="arxiv-info-row">
-                    <div class="arxiv_info_author" style="font-family: 'Solway', serif;">${authorText}</div>
-                    <div class="arxiv_info_date" style="font-family: 'Solway', serif;">Published on ${dateString}.</div>
-                  </div>
-                </div>
-                <div class="arxiv-controls">
-                  <button class="alice-toggle" style="margin-bottom: 5px; vertical-align: middle;" data-view="abstract">Summary</button>
-                  <button class="alice-toggle" style="margin-bottom: 10px; vertical-align: middle; display: none;" data-view="code">Code</button>
-                  <button class="alice-toggle" style="margin-bottom: 10px; vertical-align: middle;" data-view="bibtex">BibTex</button>
-                </div>
-              </div>
-            </div>
-          `
+        // Create and show the popup
+        const { popup, destroy } = await createAndShowPopup({
+          element: this,
+          popupId,
+          tipsyDirection,
+          paperData,
+          currentScaleFactor,
+          onPopupCreated: ($popup) => {
+            // Store the current element and popup as active
+            activeLink = this;
+            activePopup = $popup;
           }
-          </div>
-          </div>`;
-
-        const $popup = $(htmlString);
-        $(this).parent().append($popup);
-
-        let summaryLoaded = false;
-        let llmSummary = "";
-        let codeLoaded = false;
-        let codeContent = "";
-        let isProcessing = false;
-        let isButtonClicked = false;
-        let showingSummary = false;
-
-        // Add hover state tracking for the popup
-        $popup.on({
-          mouseenter: function () {
-            isMouseOverPopup = true;
-          },
-          mouseleave: function () {
-            isMouseOverPopup = false;
-            checkShouldClosePopup();
-          },
-          click: function (e) {
-            // Prevent clicks on the popup from closing it
-            e.stopPropagation();
-          },
-          mousedown: function (e) {
-            // Allow text selection to work properly
-            // Don't stop propagation for mousedown events that might start text selection
-            if (e.target.closest(".tipsy-inner")) {
-              // Don't do anything special, allow default behavior for text selection
-              return true;
-            }
-            e.stopPropagation();
-          },
         });
 
-        // Add hover state tracking for the link
-        $(this).on({
-          mouseenter: function () {
-            isMouseOverLink = true;
-          },
-          mouseleave: function () {
-            isMouseOverLink = false;
-            // Give a small delay before checking to avoid flickering
-            setTimeout(() => {
-              checkShouldClosePopup();
-            }, 100);
-          },
-        });
-
-        // Function to check if popup should close
-        function checkShouldClosePopup() {
-          setTimeout(() => {
-            if (!isMouseOverPopup && !isMouseOverLink && !isButtonClicked) {
-              $popup.remove();
-              // Reset activePopup and activeLink when removing the popup
-              activePopup = null;
-              activeLink = null;
-            }
-          }, 100);
-        }
-
-        // Add click event listener to the toggle button
-        $(`#${popupId} .alice-toggle[data-view="abstract"]`).on(
-          "click",
-          async function (e) {
-            e.stopPropagation();
-            e.preventDefault(); // Prevent default behavior
-
-            console.log("Summary/Abstract button clicked");
-
-            // Mark that the button was clicked to prevent popup from closing
-            isButtonClicked = true;
-            setTimeout(() => {
-              isButtonClicked = false;
-            }, 500); // Increase timeout to prevent accidental closing
-
-            // Prevent multiple simultaneous requests
-            if (isProcessing) {
-              return;
-            }
-
-            // Toggle active state based on current view
-            const currentView = $(this).attr("data-view");
-            if (currentView === "abstract") {
-              // Switch to AI summary
-              $(this).attr("data-view", "summary");
-              $(this).text("‎Abstract‎");
-              $(this).addClass("active");
-              showingSummary = true;
-            } else {
-              // Switch back to original abstract
-              $(this).attr("data-view", "abstract");
-              $(this).text("Summary");
-              $(this).removeClass("active");
-              showingSummary = false;
-            }
-
-            // Set all other buttons to inactive
-            $(this)
-              .closest(".arxiv-controls")
-              .find(".alice-toggle")
-              .not(this)
-              .removeClass("active");
-
-            const contentDiv = $(this)
-              .closest(".tipsy-inner")
-              .find(".arxiv_info_content");
-            const abstractDiv = contentDiv.find(".arxiv_info_abstract");
-
-            // Hide code content if visible
-            $(`#${popupId}-code-content`).hide();
-            $(`#${popupId}-abstract-content`).show();
-
-            if (showingSummary && !summaryLoaded) {
-              // Show loading indicator immediately
-              isProcessing = true;
-              abstractDiv.html("<div>Fetching AI summary...</div>");
-
-              try {
-                // Only fetch the summary when the button is clicked
-                let arxivText;
-                try {
-                  // Define arxivEndpoint using the arXiv link from the paper
-                  const arxivEndpoint = link;
-
-                  // Extract the arXiv ID from the link
-                  const arxivIdMatch = arxivEndpoint.match(/abs\/([^\/]+)/);
-                  let arxivId = null;
-
-                  if (arxivIdMatch && arxivIdMatch[1]) {
-                    arxivId = arxivIdMatch[1];
-                    console.log("Extracted arXiv ID:", arxivId);
-
-                    // Use ArXiv API instead of direct fetch to avoid CORS issues
-                    const apiEndpoint = `http://export.arxiv.org/api/query?id_list=${arxivId}`;
-                    console.log("Using ArXiv API endpoint:", apiEndpoint);
-
-                    const apiResponse = await fetchWithRetry(
-                      apiEndpoint,
-                      {},
-                      2
-                    );
-
-                    const xmlData = await apiResponse.text();
-                    const parser = new DOMParser();
-                    const xmlDoc = parser.parseFromString(xmlData, "text/xml");
-
-                    // Extract summary and other info from the XML
-                    const summary =
-                      xmlDoc.querySelector("summary")?.textContent || "";
-                    const title =
-                      xmlDoc.querySelector("title")?.textContent || "";
-                    const authors = Array.from(
-                      xmlDoc.querySelectorAll("author name")
-                    )
-                      .map(el => el.textContent)
-                      .join(", ");
-
-                    // Combine metadata and abstract for the AI to summarize
-                    arxivText = `Title: ${title}\nAuthors: ${authors}\n\nAbstract: ${summary}`;
-                    console.log(
-                      "Successfully extracted paper data from ArXiv API"
-                    );
-                  } else {
-                    // If we can't extract the ID, try using a CORS proxy as fallback
-                    console.log(
-                      "Could not extract arXiv ID, using fallback method"
-                    );
-                    throw new Error("Could not extract arXiv ID from link");
-                  }
-                } catch (error) {
-                  console.error("Error fetching from ArXiv:", error);
-                  throw new Error(
-                    `Failed to fetch article from arXiv: ${error.message}. ArXiv blocks direct content access due to CORS restrictions.`
-                  );
-                }
-
-                // Call Gemini API instead of OpenAI
-                try {
-                  let geminiResult;
-                  let retryCount = 0;
-                  let llmSummaryContent = "";
-                  let containsCode = false;
-
-                  do {
-                    // If this is a retry, show that we're retrying
-                    if (retryCount > 0) {
-                      abstractDiv.html(
-                        `<div>Retry ${retryCount}/3: Improving summary format...</div>`
-                      );
-                    }
-
-                    geminiResult = await callGeminiAPI(arxivText, retryCount);
-                    console.log(
-                      `Gemini API response (attempt ${retryCount + 1}):`,
-                      geminiResult
-                    );
-
-                    // Process response
-                    llmSummaryContent =
-                      await processGeminiResponse(geminiResult);
-
-                    console.log("LLM summary content:", llmSummaryContent);
-
-                    // Check if we still have Python code
-                    containsCode = containsPythonCode(llmSummaryContent);
-
-                    if (containsCode) {
-                      console.log(
-                        `Detected code in response, retry ${retryCount + 1}`
-                      );
-                      retryCount++;
-                    }
-                  } while (containsCode && retryCount < 3);
-
-                  // If we still have code after retries, do our best to clean it
-                  if (containsCode) {
-                    llmSummaryContent =
-                      cleanupCodeFromResponse(llmSummaryContent);
-                  }
-
-                  llmSummary = llmSummaryContent;
-
-                  // Ensure the summary doesn't have AI introduction text
-                  if (
-                    typeof llmSummary === "string" &&
-                    !llmSummary.startsWith('<div class="main-points">')
-                  ) {
-                    llmSummary = cleanAIIntroText(llmSummary);
-                  }
-
-                  summaryLoaded = true;
-
-                  // Update content with summary
-                  abstractDiv.html(llmSummary);
-                } catch (error) {
-                  if (error.message.includes("429")) {
-                    throw new Error(
-                      "AI summary service is currently busy. Please try again in a few minutes."
-                    );
-                  } else {
-                    throw error;
-                  }
-                }
-              } catch (error) {
-                console.error("Error generating summary:", error);
-                abstractDiv.html(
-                  `<div style="color: red;">Error: ${error.message}</div>`
-                );
-              } finally {
-                isProcessing = false;
-              }
-            } else if (showingSummary && summaryLoaded) {
-              // Summary already loaded, just show it
-              abstractDiv.html(llmSummary);
-            } else {
-              // Show original abstract when toggling back
-              abstractDiv.html(abstract);
-            }
-          }
-        );
-
-        // Add click event listener for the Code button
-        $(`#${popupId} .alice-toggle[data-view="code"]`).on(
-          "click",
-          async function (e) {
-            e.stopPropagation();
-            e.preventDefault(); // Prevent default behavior
-
-            console.log("Code button clicked");
-
-            // Visual feedback - add active state to this button, remove from others
-            $(this)
-              .addClass("active")
-              .siblings(".alice-toggle")
-              .removeClass("active");
-
-            // Mark that the button was clicked to prevent popup from closing
-            isButtonClicked = true;
-            setTimeout(() => {
-              isButtonClicked = false;
-            }, 500); // Increase timeout to prevent accidental closing
-
-            // Prevent multiple simultaneous requests
-            if (isProcessing) {
-              return;
-            }
-
-            // Toggle code view - hide abstract, show code
-            $(`#${popupId}-abstract-content`).hide();
-            $(`#${popupId}-code-content`).show();
-
-            // If code content is not already loaded, fetch it
-            if (!codeLoaded) {
-              isProcessing = true;
-              const codeContentDiv = $(`#${popupId}-code-content .tipsy-code`);
-
-              // Show loading state
-              codeContentDiv.html(
-                "<div class='code-loading'>Loading code examples...</div>"
-              );
-
-              try {
-                // Get paper text for generating code implementation
-                const paperText = await fetchPaperText(link);
-
-                if (!paperText) {
-                  throw new Error("Could not fetch paper text");
-                }
-
-                // Generate code implementation
-                const codeImplementation = await generateCodeImplementation(
-                  paperText,
-                  fullTitle
-                );
-
-                // Store code locally to avoid refetching
-                codeContent = codeImplementation;
-
-                // Update display with code content
-                codeContentDiv.html(`
-                  <div class="code-implementation">
-                    <pre style="background-color: rgba(0,0,0,0.1); padding: calc(10px * var(--total-scale-factor, 1)); border-radius: calc(4px * var(--total-scale-factor, 1)); white-space: pre-wrap; word-break: break-word; color: white;">${codeImplementation}</pre>
-                    <button class="copy-button">Copy to Clipboard</button>
-                  </div>
-                `);
-
-                // Add click handler for copy button
-                codeContentDiv.find(".copy-button").on("click", function () {
-                  navigator.clipboard
-                    .writeText(codeImplementation)
-                    .then(() => {
-                      $(this).text("Copied!");
-                      setTimeout(() => {
-                        $(this).text("Copy to Clipboard");
-                      }, 2000);
-                    })
-                    .catch(err => {
-                      console.error("Could not copy text: ", err);
-                      $(this).text("Failed to copy");
-                      setTimeout(() => {
-                        $(this).text("Copy to Clipboard");
-                      }, 2000);
-                    });
-                });
-
-                codeLoaded = true;
-              } catch (error) {
-                console.error("Error loading code implementation:", error);
-                codeContentDiv.html(`
-                  <div style="text-align: center; padding: calc(20px * var(--total-scale-factor, 1)); background: rgba(0,0,0,0.1); border: calc(1px * var(--total-scale-factor, 1)) solid rgba(255,255,255,0.2); border-radius: calc(5px * var(--total-scale-factor, 1)); color: white;">
-                    <div style="margin-bottom: calc(15px * var(--total-scale-factor, 1));">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="calc(24px * var(--total-scale-factor, 1))" height="calc(24px * var(--total-scale-factor, 1))" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="8" x2="12" y2="12"></line>
-                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                      </svg>
-                    </div>
-                    <div style="font-weight: 500;">${error.message || "Failed to generate code implementation. Please try again later."}</div>
-                  </div>
-                `);
-              } finally {
-                isProcessing = false;
-              }
-            }
-          }
-        );
-
-        // Add click event listener for BibTex button
-        $(`#${popupId} .alice-toggle[data-view="bibtex"]`).on(
-          "click",
-          async function (e) {
-            e.stopPropagation();
-            e.preventDefault(); // Prevent default behavior
-
-            console.log("BibTex button clicked");
-
-            // Mark that the button was clicked to prevent popup from closing
-            isButtonClicked = true;
-            setTimeout(() => {
-              isButtonClicked = false;
-            }, 500); // Increase timeout to prevent accidental closing
-
-            // Prevent multiple simultaneous requests
-            if (isProcessing) {
-              return;
-            }
-
-            // Toggle active state based on current state
-            const isCurrentlyActive = $(this).hasClass("active");
-
-            if (isCurrentlyActive) {
-              // If already active, toggle back to showing the abstract
-              $(this).removeClass("active");
-
-              // Show original abstract
-              const contentDiv = $(this)
-                .closest(".tipsy-inner")
-                .find(".arxiv_info_content");
-              const abstractDiv = contentDiv.find(".arxiv_info_abstract");
-
-              // Reset content to original abstract
-              abstractDiv.html(abstract);
-            } else {
-              // Toggle active state to show BibTex
-              $(this).addClass("active");
-
-              // Set all other buttons to inactive
-              $(this)
-                .closest(".arxiv-controls")
-                .find(".alice-toggle")
-                .not(this)
-                .removeClass("active");
-
-              const contentDiv = $(this)
-                .closest(".tipsy-inner")
-                .find(".arxiv_info_content");
-              const abstractDiv = contentDiv.find(".arxiv_info_abstract");
-
-              // Hide code content if visible
-              $(`#${popupId}-code-content`).hide();
-              $(`#${popupId}-abstract-content`).show();
-
-              // Show loading indicator immediately
-              isProcessing = true;
-              abstractDiv.html("<div>Fetching BibTex...</div>");
-
-              try {
-                // Define arxivEndpoint using the arXiv link from the paper
-                const arxivEndpoint = link;
-
-                // Extract the arXiv ID from the link
-                const arxivIdMatch = arxivEndpoint.match(/abs\/([^\/]+)/);
-                let arxivId = null;
-
-                if (arxivIdMatch && arxivIdMatch[1]) {
-                  arxivId = arxivIdMatch[1];
-                  console.log("Extracted arXiv ID for BibTex:", arxivId);
-
-                  // Fetch BibTex data from API
-                  const bibtexData = await fetchBibTexData(arxivId);
-
-                  // Display BibTex with copy button
-                  const bibtexHtml = `
-                    <div style="position: relative;">
-                      <pre style="white-space: pre-wrap; word-wrap: break-word; margin-bottom: 30px; font-family: 'Solway', serif; font-size: calc(10px * var(--total-scale-factor, 1));">${bibtexData}</pre>
-                      <button id="${popupId}-copy-bibtex" class="alice-toggle" style="position: absolute; bottom: 0; right: 0; padding-left: 10px; padding-right: 10px;">Copy to clipboard</button>
-                    </div>
-                  `;
-
-                  abstractDiv.html(bibtexHtml);
-
-                  // Add click handler for the copy button
-                  $(`#${popupId}-copy-bibtex`).on("click", function (e) {
-                    e.stopPropagation();
-                    navigator.clipboard
-                      .writeText(bibtexData)
-                      .then(() => {
-                        const originalText = $(this).text();
-                        $(this).text("Copied!");
-                        setTimeout(() => {
-                          $(this).text(originalText);
-                        }, 2000);
-                      })
-                      .catch(err => {
-                        console.error("Failed to copy text: ", err);
-                      });
-                  });
-                } else {
-                  abstractDiv.html(
-                    "<div>Could not extract arXiv ID from the link.</div>"
-                  );
-                }
-              } catch (error) {
-                console.error("Error fetching BibTex:", error);
-                abstractDiv.html(
-                  "<div>Error fetching BibTex information.</div>"
-                );
-              } finally {
-                isProcessing = false;
-              }
-            }
-          }
-        );
-
-        // Function to fetch BibTex data from API
-        async function fetchBibTexData(arxivId) {
-          try {
-            const bibtexUrl = `https://api.aryankeluskar.com/api/bibtex?arxiv_id=${arxivId}`;
-            const response = await fetchWithRetry(bibtexUrl, {}, 3);
-            return await response.text();
-          } catch (error) {
-            console.error("Error fetching BibTex data:", error);
-            throw error;
-          }
-        }
-
-        // Store the current element and popup as active
-        activeLink = this;
-        activePopup = $popup;
+        console.log("Created popup");
       }
     },
   });
+}
+
+// Function to create and show the popup with paper data
+async function createAndShowPopup({
+  element, // The element that triggered the popup
+  popupId, // Unique ID for the popup
+  tipsyDirection, // Direction for the popup (n/s + e/w)
+  paperData, // Object containing paper data (title, authors, abstract, etc.)
+  currentScaleFactor = 1, // Current scale factor for the UI
+  onPopupCreated = null, // Optional callback when popup is created
+}) {
+  // Destructure paper data with defaults
+  const {
+    title: fullTitle = "",
+    authors: rawAuthors = [],
+    abstract = "",
+    date = "",
+    link = "",
+  } = paperData;
+
+  // Limit authors to 16 words
+  let authorText = rawAuthors.join(", ");
+  const authorWords = authorText.split(/\s+/);
+  if (authorWords.length > 16) {
+    // Find the last complete author name that fits within 16 words
+    let wordCount = 0;
+    let lastCompleteAuthorIndex = -1;
+
+    for (let i = 0; i < rawAuthors.length; i++) {
+      const authorWordCount = rawAuthors[i].split(/\s+/).length;
+
+      if (wordCount + authorWordCount > 16) {
+        break;
+      }
+
+      wordCount += authorWordCount;
+      if (i < rawAuthors.length - 1) {
+        wordCount += 2; // Count ", " as a word
+      }
+
+      lastCompleteAuthorIndex = i;
+    }
+
+    if (lastCompleteAuthorIndex >= 0) {
+      const excessAuthorsCount =
+        rawAuthors.length - (lastCompleteAuthorIndex + 1);
+      authorText =
+        rawAuthors.slice(0, lastCompleteAuthorIndex + 1).join(", ") +
+        ` and ${excessAuthorsCount} others`;
+    } else {
+      // If even the first author has more than 16 words, truncate it
+      const excessWordsCount = authorWords.length - 16;
+      authorText =
+        authorWords.slice(0, 16).join(" ") +
+        ` and ${excessWordsCount} others`;
+    }
+  }
+
+  const dateStringOptions = {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  };
+  const dateString = new Intl.DateTimeFormat(
+    "en-US",
+    dateStringOptions
+  ).format(new Date(date));
+
+  // Load required libraries if not already loaded
+  if (!window.marked && !$('script[src*="marked"]').length) {
+    const script = document.createElement("script");
+    script.src = "marked.min.js";
+    script.async = true;
+    document.head.appendChild(script);
+  }
+
+  // Add CSS for toggle switch
+  if (!$("#arxiv-toggle-style").length) {
+    const style = document.createElement("style");
+    style.id = "arxiv-toggle-style";
+    style.textContent = getStyle();
+    document.head.appendChild(style);
+  }
+
+  // Add Solway font import if not already in the document
+  if (!$('link[href*="Solway"]').length) {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href =
+      "https://fonts.googleapis.com/css2?family=Solway:wght@400;500;700&display=swap";
+    document.head.appendChild(link);
+  }
+
+  // Create the popup HTML
+  const htmlString = `
+    <div id="${popupId}" class="tipsy tipsy-${tipsyDirection}" style="font-family: 'Solway', serif;">
+    <div class="tipsy-arrow"></div>
+    <div class="tipsy-inner" style="font-family: 'Solway', serif; padding: calc(10px * var(--total-scale-factor, 1));">
+    ${
+      tipsyDirection.startsWith("n")
+        ? `
+      <!-- Header at top for north orientations -->
+      <div class="arxiv-header" style="margin-bottom: 10px; border-bottom: 2px solid #000; border-spacing: 5px;">  
+        <div class="arxiv-title-row">
+          <div class="arxiv-main-content"> 
+            <div style="display: flex; align-items: center; gap: calc(10px * var(--space-scale-factor));">
+              <span class="arxiv-title" style="font-family: 'Solway', serif;font-size: calc(12px * var(--total-scale-factor, 1));">${fullTitle}</span>
+              <a href="${link}" title="View paper on arXiv" target="_blank" class="arxiv-link" aria-label="View paper on arXiv" style="display: inline-flex; align-items: center;"><img src="images/link-icon.svg" alt="External link to arXiv paper" width="calc(14px * var(--total-scale-factor, 1))" height="calc(14px * var(--total-scale-factor, 1))" style="margin-left: calc(5px * var(--space-scale-factor));"/></a>
+            </div>
+            <div class="arxiv-info-row">
+              <div class="arxiv_info_author" style="font-family: 'Solway', serif;">${authorText}</div>
+              <div class="arxiv_info_date" style="font-family: 'Solway', serif;">Published on ${dateString}.</div>
+            </div>
+          </div>
+          <div class="arxiv-controls">
+            <button class="alice-toggle" style="margin-bottom: 5px; vertical-align: middle;" data-view="abstract">Summary</button>
+            <button class="alice-toggle" style="margin-bottom: 10px; vertical-align: middle; display: none;" data-view="code">Code</button>
+            <button class="alice-toggle" style="margin-bottom: 10px; vertical-align: middle;" data-view="bibtex">BibTex</button>
+          </div>
+        </div>
+          ‎  
+      </div>
+
+      <div class="arxiv_info_content" style="font-family: 'Solway', serif;">
+        <div class="arxiv_info_abstract markdown-content" style="font-family: 'Solway', serif;">${abstract}</div>
+      </div>
+    `
+        : `
+      <!-- Content first for south orientations -->
+      <div class="arxiv_info_content" style="font-family: 'Solway', serif;">
+        <div class="arxiv_info_abstract markdown-content" style="font-family: 'Solway', serif;">${abstract}</div>
+      </div>
+      
+      <div class="arxiv-header" style="margin-top: 10px; border-top: 2px solid #000; border-spacing: 5px;">
+      
+      ‎  
+      
+      <div class="arxiv-title-row">
+          <div class="arxiv-main-content">
+            <div style="display: flex; align-items: center; gap: calc(10px * var(--space-scale-factor));">
+              <span class="arxiv-title" style="font-family: 'Solway', serif;font-size: calc(12px * var(--total-scale-factor, 1));">${fullTitle}</span>
+              <a href="${link}" title="View paper on arXiv" target="_blank" class="arxiv-link" aria-label="View paper on arXiv"><img src="images/link-icon.svg" alt="External link to arXiv paper" width="calc(14px * var(--total-scale-factor, 1))" height="calc(14px * var(--total-scale-factor, 1))"/></a>
+            </div>
+            <div class="arxiv-info-row">
+              <div class="arxiv_info_author" style="font-family: 'Solway', serif;">${authorText}</div>
+              <div class="arxiv_info_date" style="font-family: 'Solway', serif;">Published on ${dateString}.</div>
+            </div>
+          </div>
+          <div class="arxiv-controls">
+            <button class="alice-toggle" style="margin-bottom: 5px; vertical-align: middle;" data-view="abstract">Summary</button>
+            <button class="alice-toggle" style="margin-bottom: 10px; vertical-align: middle; display: none;" data-view="code">Code</button>
+            <button class="alice-toggle" style="margin-bottom: 10px; vertical-align: middle;" data-view="bibtex">BibTex</button>
+          </div>
+        </div>
+      </div>
+    `
+    }
+    </div>
+    </div>`;
+
+  const $popup = $(htmlString);
+  $(element).parent().append($popup);
+
+  let summaryLoaded = false;
+  let llmSummary = "";
+  let codeLoaded = false;
+  let codeContent = "";
+  let isProcessing = false;
+  let isButtonClicked = false;
+  let showingSummary = false;
+  let isMouseOverPopup = false;
+  let isMouseOverLink = false;
+  let activePopup = $popup;
+  let activeLink = element;
+
+  // Add hover state tracking for the popup
+  $popup.on({
+    mouseenter: function () {
+      isMouseOverPopup = true;
+    },
+    mouseleave: function () {
+      isMouseOverPopup = false;
+      checkShouldClosePopup();
+    },
+    click: function (e) {
+      // Prevent clicks on the popup from closing it
+      e.stopPropagation();
+    },
+    mousedown: function (e) {
+      // Allow text selection to work properly
+      if (e.target.closest(".tipsy-inner")) {
+        return true;
+      }
+      e.stopPropagation();
+    },
+  });
+
+  // Add hover state tracking for the link
+  $(element).on({
+    mouseenter: function () {
+      isMouseOverLink = true;
+    },
+    mouseleave: function () {
+      isMouseOverLink = false;
+      setTimeout(() => {
+        checkShouldClosePopup();
+      }, 100);
+    },
+  });
+
+  // Function to check if popup should close
+  function checkShouldClosePopup() {
+    setTimeout(() => {
+      if (!isMouseOverPopup && !isMouseOverLink && !isButtonClicked) {
+        $popup.remove();
+        activePopup = null;
+        activeLink = null;
+      }
+    }, 100);
+  }
+
+  // Add click event listeners for buttons
+  setupButtonEventListeners($popup, popupId, {
+    link,
+    abstract,
+    fullTitle,
+    isProcessing,
+    isButtonClicked,
+    summaryLoaded,
+    llmSummary,
+    showingSummary,
+    codeLoaded,
+    codeContent,
+  });
+
+  // Call the callback if provided
+  if (onPopupCreated) {
+    onPopupCreated($popup);
+  }
+
+  return {
+    popup: $popup,
+    destroy: () => {
+      $popup.remove();
+      activePopup = null;
+      activeLink = null;
+    }
+  };
+}
+
+// Helper function to set up button event listeners
+function setupButtonEventListeners($popup, popupId, state) {
+  let {
+    link,
+    abstract,
+    fullTitle,
+    isProcessing,
+    isButtonClicked,
+    summaryLoaded,
+    llmSummary,
+    showingSummary,
+    codeLoaded,
+    codeContent,
+  } = state;
+
+  // Add click event listener to the toggle button
+  $(`#${popupId} .alice-toggle[data-view="abstract"]`).on(
+    "click",
+    async function (e) {
+      e.stopPropagation();
+      e.preventDefault();
+
+      console.log("Summary/Abstract button clicked");
+
+      // Mark that the button was clicked to prevent popup from closing
+      isButtonClicked = true;
+      setTimeout(() => {
+        isButtonClicked = false;
+      }, 500);
+
+      if (isProcessing) return;
+
+      // Toggle active state based on current view
+      const currentView = $(this).attr("data-view");
+      if (currentView === "abstract") {
+        $(this).attr("data-view", "summary");
+        $(this).text("‎Abstract‎");
+        $(this).addClass("active");
+        showingSummary = true;
+      } else {
+        $(this).attr("data-view", "abstract");
+        $(this).text("Summary");
+        $(this).removeClass("active");
+        showingSummary = false;
+      }
+
+      $(this)
+        .closest(".arxiv-controls")
+        .find(".alice-toggle")
+        .not(this)
+        .removeClass("active");
+
+      const contentDiv = $(this)
+        .closest(".tipsy-inner")
+        .find(".arxiv_info_content");
+      const abstractDiv = contentDiv.find(".arxiv_info_abstract");
+
+      $(`#${popupId}-code-content`).hide();
+      $(`#${popupId}-abstract-content`).show();
+
+      if (showingSummary && !summaryLoaded) {
+        isProcessing = true;
+        abstractDiv.html("<div>Fetching AI summary...</div>");
+
+        try {
+          let arxivText;
+          try {
+            const arxivEndpoint = link;
+            const arxivIdMatch = arxivEndpoint.match(/abs\/([^\/]+)/);
+            let arxivId = null;
+
+            if (arxivIdMatch && arxivIdMatch[1]) {
+              arxivId = arxivIdMatch[1];
+              console.log("Extracted arXiv ID:", arxivId);
+
+              const apiEndpoint = `http://export.arxiv.org/api/query?id_list=${arxivId}`;
+              console.log("Using ArXiv API endpoint:", apiEndpoint);
+
+              const apiResponse = await fetchWithRetry(apiEndpoint, {}, 2);
+              const xmlData = await apiResponse.text();
+              const parser = new DOMParser();
+              const xmlDoc = parser.parseFromString(xmlData, "text/xml");
+
+              const summary = xmlDoc.querySelector("summary")?.textContent || "";
+              const title = xmlDoc.querySelector("title")?.textContent || "";
+              const authors = Array.from(xmlDoc.querySelectorAll("author name"))
+                .map(el => el.textContent)
+                .join(", ");
+
+              arxivText = `Title: ${title}\nAuthors: ${authors}\n\nAbstract: ${summary}`;
+              console.log("Successfully extracted paper data from ArXiv API");
+            } else {
+              console.log("Could not extract arXiv ID, using fallback method");
+              throw new Error("Could not extract arXiv ID from link");
+            }
+          } catch (error) {
+            console.error("Error fetching from ArXiv:", error);
+            throw new Error(
+              `Failed to fetch article from arXiv: ${error.message}. ArXiv blocks direct content access due to CORS restrictions.`
+            );
+          }
+
+          try {
+            let geminiResult;
+            let retryCount = 0;
+            let llmSummaryContent = "";
+            let containsCode = false;
+
+            do {
+              if (retryCount > 0) {
+                abstractDiv.html(
+                  `<div>Retry ${retryCount}/3: Improving summary format...</div>`
+                );
+              }
+
+              geminiResult = await callGeminiAPI(arxivText, retryCount);
+              console.log(
+                `Gemini API response (attempt ${retryCount + 1}):`,
+                geminiResult
+              );
+
+              llmSummaryContent = await processGeminiResponse(geminiResult);
+              console.log("LLM summary content:", llmSummaryContent);
+
+              containsCode = containsPythonCode(llmSummaryContent);
+
+              if (containsCode) {
+                console.log(`Detected code in response, retry ${retryCount + 1}`);
+                retryCount++;
+              }
+            } while (containsCode && retryCount < 3);
+
+            if (containsCode) {
+              llmSummaryContent = cleanupCodeFromResponse(llmSummaryContent);
+            }
+
+            llmSummary = llmSummaryContent;
+
+            if (
+              typeof llmSummary === "string" &&
+              !llmSummary.startsWith('<div class="main-points">')
+            ) {
+              llmSummary = cleanAIIntroText(llmSummary);
+            }
+
+            summaryLoaded = true;
+            abstractDiv.html(llmSummary);
+          } catch (error) {
+            if (error.message.includes("429")) {
+              throw new Error(
+                "AI summary service is currently busy. Please try again in a few minutes."
+              );
+            } else {
+              throw error;
+            }
+          }
+        } catch (error) {
+          console.error("Error generating summary:", error);
+          abstractDiv.html(
+            `<div style="color: red;">Error: ${error.message}</div>`
+          );
+        } finally {
+          isProcessing = false;
+        }
+      } else if (showingSummary && summaryLoaded) {
+        abstractDiv.html(llmSummary);
+      } else {
+        abstractDiv.html(abstract);
+      }
+    }
+  );
+
+  // Add click event listener for the Code button
+  $(`#${popupId} .alice-toggle[data-view="code"]`).on(
+    "click",
+    async function (e) {
+      e.stopPropagation();
+      e.preventDefault();
+
+      console.log("Code button clicked");
+
+      $(this).addClass("active").siblings(".alice-toggle").removeClass("active");
+
+      isButtonClicked = true;
+      setTimeout(() => {
+        isButtonClicked = false;
+      }, 500);
+
+      if (isProcessing) return;
+
+      $(`#${popupId}-abstract-content`).hide();
+      $(`#${popupId}-code-content`).show();
+
+      if (!codeLoaded) {
+        isProcessing = true;
+        const codeContentDiv = $(`#${popupId}-code-content .tipsy-code`);
+
+        codeContentDiv.html(
+          "<div class='code-loading'>Loading code examples...</div>"
+        );
+
+        try {
+          const paperText = await fetchPaperText(link);
+
+          if (!paperText) {
+            throw new Error("Could not fetch paper text");
+          }
+
+          const codeImplementation = await generateCodeImplementation(
+            paperText,
+            fullTitle
+          );
+
+          codeContent = codeImplementation;
+
+          codeContentDiv.html(`
+            <div class="code-implementation">
+              <pre style="background-color: rgba(0,0,0,0.1); padding: calc(10px * var(--total-scale-factor, 1)); border-radius: calc(4px * var(--total-scale-factor, 1)); white-space: pre-wrap; word-break: break-word; color: white;">${codeImplementation}</pre>
+              <button class="copy-button">Copy to Clipboard</button>
+            </div>
+          `);
+
+          codeContentDiv.find(".copy-button").on("click", function () {
+            navigator.clipboard
+              .writeText(codeImplementation)
+              .then(() => {
+                $(this).text("Copied!");
+                setTimeout(() => {
+                  $(this).text("Copy to Clipboard");
+                }, 2000);
+              })
+              .catch(err => {
+                console.error("Could not copy text: ", err);
+                $(this).text("Failed to copy");
+                setTimeout(() => {
+                  $(this).text("Copy to Clipboard");
+                }, 2000);
+              });
+          });
+
+          codeLoaded = true;
+        } catch (error) {
+          console.error("Error loading code implementation:", error);
+          codeContentDiv.html(`
+            <div style="text-align: center; padding: calc(20px * var(--total-scale-factor, 1)); background: rgba(0,0,0,0.1); border: calc(1px * var(--total-scale-factor, 1)) solid rgba(255,255,255,0.2); border-radius: calc(5px * var(--total-scale-factor, 1)); color: white;">
+              <div style="margin-bottom: calc(15px * var(--total-scale-factor, 1));">
+                <svg xmlns="http://www.w3.org/2000/svg" width="calc(24px * var(--total-scale-factor, 1))" height="calc(24px * var(--total-scale-factor, 1))" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+              </div>
+              <div style="font-weight: 500;">${error.message || "Failed to generate code implementation. Please try again later."}</div>
+            </div>
+          `);
+        } finally {
+          isProcessing = false;
+        }
+      }
+    }
+  );
+
+  // Add click event listener for BibTex button
+  $(`#${popupId} .alice-toggle[data-view="bibtex"]`).on(
+    "click",
+    async function (e) {
+      e.stopPropagation();
+      e.preventDefault();
+
+      console.log("BibTex button clicked");
+
+      isButtonClicked = true;
+      setTimeout(() => {
+        isButtonClicked = false;
+      }, 500);
+
+      if (isProcessing) return;
+
+      const isCurrentlyActive = $(this).hasClass("active");
+
+      if (isCurrentlyActive) {
+        $(this).removeClass("active");
+
+        const contentDiv = $(this)
+          .closest(".tipsy-inner")
+          .find(".arxiv_info_content");
+        const abstractDiv = contentDiv.find(".arxiv_info_abstract");
+
+        abstractDiv.html(abstract);
+      } else {
+        $(this).addClass("active");
+
+        $(this)
+          .closest(".arxiv-controls")
+          .find(".alice-toggle")
+          .not(this)
+          .removeClass("active");
+
+        const contentDiv = $(this)
+          .closest(".tipsy-inner")
+          .find(".arxiv_info_content");
+        const abstractDiv = contentDiv.find(".arxiv_info_abstract");
+
+        $(`#${popupId}-code-content`).hide();
+        $(`#${popupId}-abstract-content`).show();
+
+        isProcessing = true;
+        abstractDiv.html("<div>Fetching BibTex...</div>");
+
+        try {
+          const arxivEndpoint = link;
+          const arxivIdMatch = arxivEndpoint.match(/abs\/([^\/]+)/);
+          let arxivId = null;
+
+          if (arxivIdMatch && arxivIdMatch[1]) {
+            arxivId = arxivIdMatch[1];
+            console.log("Extracted arXiv ID for BibTex:", arxivId);
+
+            const bibtexData = await fetchBibTexData(arxivId);
+
+            const bibtexHtml = `
+              <div style="position: relative;">
+                <pre style="white-space: pre-wrap; word-wrap: break-word; margin-bottom: 30px; font-family: 'Solway', serif; font-size: calc(10px * var(--total-scale-factor, 1));">${bibtexData}</pre>
+                <button id="${popupId}-copy-bibtex" class="alice-toggle" style="position: absolute; bottom: 0; right: 0; padding-left: 10px; padding-right: 10px;">Copy to clipboard</button>
+              </div>
+            `;
+
+            abstractDiv.html(bibtexHtml);
+
+            $(`#${popupId}-copy-bibtex`).on("click", function (e) {
+              e.stopPropagation();
+              navigator.clipboard
+                .writeText(bibtexData)
+                .then(() => {
+                  const originalText = $(this).text();
+                  $(this).text("Copied!");
+                  setTimeout(() => {
+                    $(this).text(originalText);
+                  }, 2000);
+                })
+                .catch(err => {
+                  console.error("Failed to copy text: ", err);
+                });
+            });
+          } else {
+            abstractDiv.html(
+              "<div>Could not extract arXiv ID from the link.</div>"
+            );
+          }
+        } catch (error) {
+          console.error("Error fetching BibTex:", error);
+          abstractDiv.html("<div>Error fetching BibTex information.</div>");
+        } finally {
+          isProcessing = false;
+        }
+      }
+    }
+  );
+}
+
+// Helper function to fetch BibTex data from API
+async function fetchBibTexData(arxivId) {
+  try {
+    const bibtexUrl = `https://api.aryankeluskar.com/api/bibtex?arxiv_id=${arxivId}`;
+    const response = await fetchWithRetry(bibtexUrl, {}, 3);
+    return await response.text();
+  } catch (error) {
+    console.error("Error fetching BibTex data:", error);
+    throw error;
+  }
 }
 
 export { fetchCitationInfo };
