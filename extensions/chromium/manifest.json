@@ -2,7 +2,7 @@
   "minimum_chrome_version": "103",
   "manifest_version": 3,
   "name": "Alice",
-  "version": "0.12.5820",
+  "version": "0.12.5822",
   "description": "Alice is a Chrome Extension to supercharge your literature review, making research accessible to all.",
   "icons": {
     "128": "icon128.png",

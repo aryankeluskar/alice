@@ -81,15 +81,6 @@ async function registerPdfRedirectRule() {
       action: ACTION_IGNORE_OTHER_RULES,
     },
     {
-      // Redirect local PDF files if isAllowedFileSchemeAccess is true. No-op
-      // otherwise and then handled by webNavigation.onBeforeNavigate below.
-      condition: {
-        regexFilter: "^file://.*\\.pdf$",
-        resourceTypes: ["main_frame", "sub_frame"],
-      },
-      action: ACTION_REDIRECT_TO_VIEWER,
-    },
-    {
       // Respect the Content-Disposition:attachment header in sub_frame. But:
       // Display the PDF viewer regardless of the Content-Disposition header if
       // the file is displayed in the main frame, since most often users want to

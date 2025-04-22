@@ -107,28 +107,8 @@ const ChromeCom = {
       return;
     }
     if (/^file?:/.test(file)) {
-      getEmbedderOrigin(function (origin) {
-        // If the origin cannot be determined, let Chrome decide whether to
-        // allow embedding files. Otherwise, only allow local files to be
-        // embedded from local files or Chrome extensions.
-        // Even without this check, the file load in frames is still blocked,
-        // but this may change in the future (https://crbug.com/550151).
-        if (origin && !/^file:|^chrome-extension:/.test(origin)) {
-          viewerApp._documentError(null, {
-            message:
-              `Blocked ${origin} from loading ${file}. Refused to load ` +
-              "a local file in a non-local page for security reasons.",
-          });
-          return;
-        }
-        isAllowedFileSchemeAccess(function (isAllowedAccess) {
-          if (isAllowedAccess) {
-            callback(file);
-          } else {
-            // requestAccessToLocalFile(file, viewerApp.overlayManager, callback);
-          }
-        });
-      });
+      // Let browser handle local files normally without extension interference
+      callback(file);
       return;
     }
     callback(file);

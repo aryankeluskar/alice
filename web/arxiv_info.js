@@ -409,6 +409,61 @@ function initializeArxivInfo(pdfDocument) {
     mouseenter: function() {
       console.log($(this).attr("href"));
 
+      // Check localStorage for paper title first
+      const storedTitle = localStorage.getItem('paper_title');
+      if (storedTitle) {
+        console.log("Found stored paper title:", storedTitle);
+      } else {
+        console.log("No stored title found, attempting to extract from PDF");
+        // Get the current page text content
+        const pdfDocument = PDFViewerApplication.pdfDocument;
+        if (pdfDocument) {
+          // Get the first page
+          pdfDocument.getPage(1).then(function(page) {
+            return page.getTextContent();
+          }).then(async function(textContent) {
+            // Concatenate all the text items
+            const pageText = textContent.items.map(item => item.str).join(' ');
+            console.log("Extracted text from first page:", pageText);
+
+            // Call Gemini API to extract title
+            try {
+              const response = await fetch('https://api.aryankeluskar.com/api/gemini', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  contents: [{
+                    parts: [{
+                      text: `Extract only the title of this academic paper. Return ONLY the title, nothing else. If you cannot find a clear title, return NULL.
+
+Text from first page:
+${pageText}`
+                    }]
+                  }]
+                })
+              });
+
+              const result = await response.json();
+              if (result.candidates && result.candidates[0] && result.candidates[0].content) {
+                const extractedTitle = result.candidates[0].content.parts[0].text.trim();
+                if (extractedTitle && extractedTitle !== 'NULL') {
+                  console.log("Extracted title from PDF:", extractedTitle);
+                  localStorage.setItem('paper_title', extractedTitle);
+                }
+              }
+            } catch (error) {
+              console.error("Error extracting title:", error);
+            }
+          }).catch(function(error) {
+            console.error("Error getting page text content:", error);
+          });
+        } else {
+          console.log("PDF document not loaded yet");
+        }
+      }
+
       // if "cite" not in href, ignore
       if (!$(this).attr("href").includes("cite")) {
         return;
