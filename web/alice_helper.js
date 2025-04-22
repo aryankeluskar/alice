@@ -1,3 +1,22 @@
+/**
+ * Class representing ArXiv paper information
+ * @typedef {Object} ArxivInfo
+ * @property {string} title - The title of the paper
+ * @property {string} authors - The authors of the paper
+ * @property {string} year - The publication year
+ * @property {string} abstract - The paper abstract
+ * @property {string} link - The link to the paper
+ */
+class ArxivInfo {
+  constructor(title, authors, year, abstract, link) {
+    this.title = title;
+    this.authors = authors;
+    this.year = year;
+    this.abstract = abstract;
+    this.link = link;
+  }
+}
+
 function fail(el, reason) {
   // Log the failure reason to help with debugging
   console.log(`Citation popup failed: ${reason}`, $(el).attr("href"));
