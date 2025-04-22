@@ -740,7 +740,7 @@ function fetchCitationInfo(pdfDocument) {
           fail(this, "Missing required fields in the matching entry");
           return;
         }
-        const link = matchingEntry.getElementsByTagName("id")[0].textContent,
+        const link = matchingEntry.getElementsByTagName("id")[0]?.textContent,
           fullTitle =
             matchingEntry.getElementsByTagName("title")[0].textContent,
           abstract =
@@ -749,6 +749,16 @@ function fetchCitationInfo(pdfDocument) {
           rawAuthors = Array.from(
             matchingEntry.getElementsByTagName("author")
           ).map(a => a.children[0].textContent);
+
+        // Check if we have a valid ArXiv link
+        let finalLink = link;
+        if (!finalLink || !finalLink.includes("arxiv.org")) {
+          // Create Google Scholar search URL
+          const authorString = rawAuthors.join(", ");
+          const searchQuery = encodeURIComponent(`${fullTitle} by ${authorString}`);
+          finalLink = `https://scholar.google.com/scholar?hl=en&as_sdt=0%2C3&q=${searchQuery}&btnG=`;
+          console.log("No ArXiv link found, using Google Scholar fallback:", finalLink);
+        }
 
         // Limit authors to 16 words
         let authorText = rawAuthors.join(", ");
@@ -856,12 +866,12 @@ function fetchCitationInfo(pdfDocument) {
 
 // Function to create and show the popup with paper data
 async function createAndShowPopup({
-  element, // The element that triggered the popup
-  popupId, // Unique ID for the popup
-  tipsyDirection, // Direction for the popup (n/s + e/w)
-  matchingEntry, // XML entry containing paper data (title, authors, abstract, etc.)
-  currentScaleFactor = 1, // Current scale factor for the UI
-  onPopupCreated = null, // Optional callback when popup is created
+  element,
+  popupId,
+  tipsyDirection,
+  matchingEntry,
+  currentScaleFactor = 1,
+  onPopupCreated = null,
 }) {
   const paperData = {
     title: matchingEntry.getElementsByTagName("title")[0]?.textContent || "",
@@ -882,6 +892,16 @@ async function createAndShowPopup({
     date = "",
     link = "",
   } = paperData;
+
+  // Check if we have a valid ArXiv link
+  let finalLink = link;
+  if (!finalLink || !finalLink.includes("arxiv.org")) {
+    // Create Google Scholar search URL
+    const authorString = rawAuthors.join(", ");
+    const searchQuery = encodeURIComponent(`${fullTitle} by ${authorString}`);
+    finalLink = `https://scholar.google.com/scholar?hl=en&as_sdt=0%2C3&q=${searchQuery}&btnG=`;
+    console.log("No ArXiv link found, using Google Scholar fallback:", finalLink);
+  }
 
   // Limit authors to 16 words
   let authorText = rawAuthors.join(", ");
@@ -916,7 +936,8 @@ async function createAndShowPopup({
       // If even the first author has more than 16 words, truncate it
       const excessWordsCount = authorWords.length - 16;
       authorText =
-        authorWords.slice(0, 16).join(" ") + ` and ${excessWordsCount} others`;
+        authorWords.slice(0, 16).join(" ") +
+        ` and ${excessWordsCount} others`;
     }
   }
 
@@ -925,9 +946,10 @@ async function createAndShowPopup({
     month: "short",
     day: "numeric",
   };
-  const dateString = new Intl.DateTimeFormat("en-US", dateStringOptions).format(
-    new Date(date)
-  );
+  const dateString = new Intl.DateTimeFormat(
+    "en-US",
+    dateStringOptions
+  ).format(new Date(date));
 
   // Load required libraries if not already loaded
   if (!window.marked && !$('script[src*="marked"]').length) {
@@ -968,7 +990,7 @@ async function createAndShowPopup({
           <div class="arxiv-main-content"> 
             <div style="display: flex; align-items: center; gap: calc(10px * var(--space-scale-factor));">
               <span class="arxiv-title" style="font-family: 'Solway', serif;font-size: calc(12px * var(--total-scale-factor, 1));">${fullTitle}</span>
-              <a href="${link}" title="View paper on arXiv" target="_blank" class="arxiv-link" aria-label="View paper on arXiv" style="display: inline-flex; align-items: center;"><img src="images/link-icon.svg" alt="External link to arXiv paper" width="calc(14px * var(--total-scale-factor, 1))" height="calc(14px * var(--total-scale-factor, 1))" style="margin-left: calc(5px * var(--space-scale-factor));"/></a>
+              <a href="${finalLink}" title="${finalLink.includes('scholar.google.com') ? 'View on Google Scholar' : 'View paper on arXiv'}" target="_blank" class="arxiv-link" aria-label="${finalLink.includes('scholar.google.com') ? 'View on Google Scholar' : 'View paper on arXiv'}" style="display: inline-flex; align-items: center;"><img src="images/${finalLink.includes('scholar.google.com') ? 'link-icon.svg' : 'link-icon.svg'}" alt="${finalLink.includes('scholar.google.com') ? 'External link to Google Scholar' : 'External link to arXiv paper'}" width="calc(14px * var(--total-scale-factor, 1))" height="calc(14px * var(--total-scale-factor, 1))" style="margin-left: calc(5px * var(--space-scale-factor));"/></a>
             </div>
             <div class="arxiv-info-row">
               <div class="arxiv_info_author" style="font-family: 'Solway', serif;">${authorText}</div>
@@ -1002,7 +1024,7 @@ async function createAndShowPopup({
           <div class="arxiv-main-content">
             <div style="display: flex; align-items: center; gap: calc(10px * var(--space-scale-factor));">
               <span class="arxiv-title" style="font-family: 'Solway', serif;font-size: calc(12px * var(--total-scale-factor, 1));">${fullTitle}</span>
-              <a href="${link}" title="View paper on arXiv" target="_blank" class="arxiv-link" aria-label="View paper on arXiv"><img src="images/link-icon.svg" alt="External link to arXiv paper" width="calc(14px * var(--total-scale-factor, 1))" height="calc(14px * var(--total-scale-factor, 1))"/></a>
+              <a href="${finalLink}" title="${finalLink.includes('scholar.google.com') ? 'View on Google Scholar' : 'View paper on arXiv'}" target="_blank" class="arxiv-link" aria-label="${finalLink.includes('scholar.google.com') ? 'View on Google Scholar' : 'View paper on arXiv'}" style="display: inline-flex; align-items: center;"><img src="images/${finalLink.includes('scholar.google.com') ? 'link-icon.svg' : 'link-icon.svg'}" alt="${finalLink.includes('scholar.google.com') ? 'External link to Google Scholar' : 'External link to arXiv paper'}" width="calc(14px * var(--total-scale-factor, 1))" height="calc(14px * var(--total-scale-factor, 1))" style="margin-left: calc(5px * var(--space-scale-factor));"/></a>
             </div>
             <div class="arxiv-info-row">
               <div class="arxiv_info_author" style="font-family: 'Solway', serif;">${authorText}</div>
