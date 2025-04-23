@@ -552,7 +552,20 @@ async function fetchAndStoreSemanticScholarData(title, paperId) {
       JSON.stringify(fullPaperData)
     );
     console.log("Stored full paper data for", paperId, ":", fullPaperData);
-    // **TODO:** Use fullPaperData to populate the popup now that it's fetched
+    
+    // If there's an active link being hovered that is waiting for this data, trigger a hover event
+    if (typeof $ !== 'undefined') {
+      const $activeHoveredLinks = $("a:hover");
+      if ($activeHoveredLinks.length > 0) {
+        console.log("Found active hovered link, triggering hover event to show popup");
+        // Briefly unhover and then rehover to trigger the popup creation
+        const $link = $activeHoveredLinks.first();
+        $link.trigger("mouseleave");
+        setTimeout(() => {
+          $link.trigger("mouseenter");
+        }, 100);
+      }
+    }
   } catch (error) {
     console.error(
       "Error fetching or storing Semantic Scholar data for",
