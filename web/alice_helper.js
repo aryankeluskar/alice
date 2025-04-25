@@ -121,6 +121,21 @@ async function getGeminiFallbackReference(paperId, linkHref, currentElement) {
         paperUrl
       );
 
+      // Cache the final reference data
+      const citationKey = linkHref.split("cite.")[1];
+      if (citationKey) {
+        const cachedFinalRefs = JSON.parse(localStorage.getItem("cached_final_refs") || "{}");
+        cachedFinalRefs[citationKey] = {
+          title: paperData.title,
+          abstract: paperData.abstract || "",
+          authors: authorsString,
+          year: paperData.year,
+          link: paperUrl
+        };
+        localStorage.setItem("cached_final_refs", JSON.stringify(cachedFinalRefs));
+        console.log("Stored paper data in cached_final_refs for citation:", citationKey);
+      }
+
       // Success message
       console.log(
         "Successfully retrieved paper data from Semantic Scholar",
@@ -193,7 +208,6 @@ async function getGeminiFallbackReference(paperId, linkHref, currentElement) {
     } catch (error) {
       console.error("Error fetching Semantic Scholar data:", error);
 
-              
       if (error.message.includes("rate limit") || error.message.includes("429")) {
         alert("Semantic Scholar API rate limit reached. Please wait a moment and try again later.");
       } else {
@@ -204,7 +218,6 @@ async function getGeminiFallbackReference(paperId, linkHref, currentElement) {
         currentElement,
         `Failed to fetch paper details: ${error.message}`
       );
-
     }
   } else {
     console.log("No matching reference found or missing paper ID");
