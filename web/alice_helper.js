@@ -1446,10 +1446,10 @@ function getStyle() {
       font-family: 'Solway', serif;
       color: #555;
     }
-    .arxiv_info_content, .arxiv_info_abstract, .markdown-content, .code-implementation pre {
+    .alice_main_content, .alice_main_abstract, .markdown-content, .code-implementation pre {
       user-select: text;
     }
-    .main-points, .concise-summary, .arxiv-title, .arxiv_info_author, .arxiv_info_date {
+    .main-points, .concise-summary, .arxiv-title, .alice_main_author, .alice_main_date {
       user-select: text;
     }
     .section-nav {
@@ -1722,8 +1722,8 @@ async function createAndShowPopup({
               }
             </div>
             <div class="arxiv-info-row">
-              <div class="arxiv_info_author" style="font-family: 'Solway', serif;">${authorText}</div>
-              <div class="arxiv_info_date" style="font-family: 'Solway', serif;">Published on ${dateString}.</div>
+              <div class="alice_main_author" style="font-family: 'Solway', serif;">${authorText}</div>
+              <div class="alice_main_date" style="font-family: 'Solway', serif;">Published on ${dateString}.</div>
             </div>
           </div>
           <div class="arxiv-controls">
@@ -1743,14 +1743,14 @@ async function createAndShowPopup({
           ‎  
       </div>
 
-      <div class="arxiv_info_content" style="font-family: 'Solway', serif;">
-        <div class="arxiv_info_abstract markdown-content" style="font-family: 'Solway', serif;">${abstract}</div>
+      <div class="alice_main_content" style="font-family: 'Solway', serif;">
+        <div class="alice_main_abstract markdown-content" style="font-family: 'Solway', serif;">${abstract}</div>
       </div>
     `
         : `
       <!-- Content first for south orientations -->
-      <div class="arxiv_info_content" style="font-family: 'Solway', serif;">
-        <div class="arxiv_info_abstract markdown-content" style="font-family: 'Solway', serif;">${abstract}</div>
+      <div class="alice_main_content" style="font-family: 'Solway', serif;">
+        <div class="alice_main_abstract markdown-content" style="font-family: 'Solway', serif;">${abstract}</div>
       </div>
       
       <div class="arxiv-header" style="margin-top: 10px; border-top: 2px solid #000; border-spacing: 5px;">
@@ -1773,8 +1773,8 @@ async function createAndShowPopup({
               }
             </div>
             <div class="arxiv-info-row">
-              <div class="arxiv_info_author" style="font-family: 'Solway', serif;">${authorText}</div>
-              <div class="arxiv_info_date" style="font-family: 'Solway', serif;">Published on ${dateString}.</div>
+              <div class="alice_main_author" style="font-family: 'Solway', serif;">${authorText}</div>
+              <div class="alice_main_date" style="font-family: 'Solway', serif;">Published on ${dateString}.</div>
             </div>
           </div>
           <div class="arxiv-controls">
@@ -1943,8 +1943,8 @@ function setupButtonEventListeners($popup, popupId, state) {
 
       const contentDiv = $(this)
         .closest(".tipsy-inner")
-        .find(".arxiv_info_content");
-      const abstractDiv = contentDiv.find(".arxiv_info_abstract");
+        .find(".alice_main_content");
+      const abstractDiv = contentDiv.find(".alice_main_abstract");
 
       $(`#${popupId}-code-content`).hide();
       $(`#${popupId}-abstract-content`).show();
@@ -2232,8 +2232,8 @@ function setupButtonEventListeners($popup, popupId, state) {
 
         const contentDiv = $(this)
           .closest(".tipsy-inner")
-          .find(".arxiv_info_content");
-        const abstractDiv = contentDiv.find(".arxiv_info_abstract");
+          .find(".alice_main_content");
+        const abstractDiv = contentDiv.find(".alice_main_abstract");
 
         abstractDiv.html(abstract);
       } else {
@@ -2247,8 +2247,8 @@ function setupButtonEventListeners($popup, popupId, state) {
 
         const contentDiv = $(this)
           .closest(".tipsy-inner")
-          .find(".arxiv_info_content");
-        const abstractDiv = contentDiv.find(".arxiv_info_abstract");
+          .find(".alice_main_content");
+        const abstractDiv = contentDiv.find(".alice_main_abstract");
 
         $(`#${popupId}-code-content`).hide();
         $(`#${popupId}-abstract-content`).show();

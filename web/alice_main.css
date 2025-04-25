@@ -36,22 +36,22 @@ Adapted from:
 .tipsy-sw .tipsy-arrow { bottom: calc(11px * var(--total-scale-factor, 1)); left: calc(15px * var(--total-scale-factor, 1)); border-top-style: solid; border-bottom: none;  border-left-color: transparent; border-right-color: transparent; }
 .tipsy-se .tipsy-arrow { bottom: calc(11px * var(--total-scale-factor, 1)); right: calc(15px * var(--total-scale-factor, 1)); border-top-style: solid; border-bottom: none; border-left-color: transparent; border-right-color: transparent; }
 
-.arxiv_info_title {
+.alice_main_title {
   font-size: calc(11px * var(--total-scale-factor, 1));
   font-weight: 700;
 }
 
-.arxiv_info_date {
+.alice_main_date {
   font-size: calc(8px * var(--total-scale-factor, 1));
   font-style: italic;
 }
 
-.arxiv_info_author {
+.alice_main_author {
   font-size: calc(8px * var(--total-scale-factor, 1));
   padding: calc(3px * var(--total-scale-factor, 1)) 0px;
 }
 
-.arxiv_info_abstract {
+.alice_main_abstract {
   font-size: calc(9px * var(--total-scale-factor, 1));
   padding-top: calc(3px * var(--total-scale-factor, 1));
 }

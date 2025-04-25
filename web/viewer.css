@@ -14,7 +14,7 @@
  */
 
 @import url(pdf_viewer.css);
-@import url(arxiv_info.css);
+@import url(alice_main.css);
 
 :root {
   --dir-factor: 1;
