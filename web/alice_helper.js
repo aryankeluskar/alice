@@ -192,10 +192,19 @@ async function getGeminiFallbackReference(paperId, linkHref, currentElement) {
       return entry;
     } catch (error) {
       console.error("Error fetching Semantic Scholar data:", error);
+
+              
+      if (error.message.includes("rate limit") || error.message.includes("429")) {
+        alert("Semantic Scholar API rate limit reached. Please wait a moment and try again later.");
+      } else {
+        alert("We have hit a rate limit on the Semantic Scholar API. Please wait for a moment and try again later.");
+      }
+      
       fail(
         currentElement,
-        "Failed to fetch paper details from Semantic Scholar"
+        `Failed to fetch paper details: ${error.message}`
       );
+
     }
   } else {
     console.log("No matching reference found or missing paper ID");

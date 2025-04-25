@@ -242,11 +242,29 @@ function fetchCitationInfo(pdfDocument) {
           entry.appendChild(authorElement);
         });
 
+        // Calculate popup direction based on element position
+        let tipsyDirection;
+        try {
+          const zoomMultiplier = currentScaleFactor || 1;
+          const leftPixels = parseFloat($(this).parent().css("left")) * zoomMultiplier;
+          const topPixels = parseFloat($(this).parent().css("top")) * zoomMultiplier;
+          const width = parseInt($(this).parent().parent().parent().css("width"));
+          const height = parseInt($(this).parent().parent().parent().css("height"));
+          const northSouth = topPixels > height / 2 ? "s" : "n";
+          const eastWest = leftPixels > width / 2 ? "e" : "w";
+          tipsyDirection = `${northSouth}${eastWest}`;
+        } catch (err) {
+          console.log("Error calculating popup direction:", err);
+          tipsyDirection = "ne"; // Fallback direction
+        }
+
+        console.log("Calculated tipsyDirection for cached popup:", tipsyDirection);
+
         // Create and show popup with cached data
         createAndShowPopup({
           element: this,
           popupId,
-          tipsyDirection: "sw", // Default direction
+          tipsyDirection,
           matchingEntry: entry,
           currentScaleFactor,
           onPopupCreated: $popup => {
@@ -375,7 +393,7 @@ function fetchCitationInfo(pdfDocument) {
         tipsyDirection = `${northSouth}${eastWest}`;
       } catch (err) {
         console.log(err);
-        tipsyDirection = "sw";
+        tipsyDirection = "ne";
       }
 
       console.log("tipsyDirection", tipsyDirection);
