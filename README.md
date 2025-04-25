@@ -1,5 +1,14 @@
 # Alice 🔍 - Browser Extension for Research Papers
 
+<div align="left">
+  <a href="https://github.com/aryankeluskar/alice/stargazers">
+    <img src="https://img.shields.io/github/stars/aryankeluskar/alice?style=flat-square&logo=github" alt="GitHub Stars">
+  </a>
+  <a href="https://dub.sh/alice.pdf?utm_source=readme">
+    <img src="https://img.shields.io/chrome-web-store/v/pbcobohpehjbogheaejoppcjdpbjnmif?style=flat-square&color=purple" alt="Chrome Web Store">
+  </a>
+</div>
+
 Alice is a Web Extension to supercharge your literature review, making research accessible to. Just hover on a citation and get all the information you need. Install now from the [chrome webstore](https://dub.sh/alice.pdf?utm_source=readme)!
 
 <img width="1127" alt="brave sample" src="./web/images/425740193-f1ac44ff-c88e-4376-be14-d7714615d8ae.png" />
