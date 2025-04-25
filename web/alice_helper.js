@@ -573,10 +573,6 @@ async function fetchAndStoreSemanticScholarData(title, paperId) {
       `https://api.semanticscholar.org/graph/v1/paper/${semanticPaperId}/references?fields=abstract&offset=0&limit=999`
     );
 
-    if (!referencesResponse.ok) {
-      throw new Error(`References fetch failed: ${referencesResponse.status}`);
-    }
-
     const referencesData = await referencesResponse.json();
     console.log(
       `Fetched ${referencesData.data ? referencesData.data.length : 0} references for ${semanticPaperId}`
@@ -597,11 +593,13 @@ async function fetchAndStoreSemanticScholarData(title, paperId) {
 
     if (!referencesData.data || referencesData.data.length === 0) {
       alert(
-        "This paper is unfortunately not indexed by Alice. Please try again later."
+        "This paper cannot be indexed by Alice. Please try again later."
       );
       fail(currentElement, "Paper not indexed by Alice");
       return;
     }
+
+    alert("Alice has completed indexing this paper.");
 
     // If there's an active link being hovered that is waiting for this data, trigger a hover event
     if (typeof $ !== "undefined") {
@@ -1550,7 +1548,7 @@ async function fetchWithRetry(url, options, maxRetries = 3) {
 
       // If it's a rate limit error, retry with exponential backoff
       if (response.status === 429) {
-        alert("Alice has hit an API rate limit. Please wait for 5-6 seconds...");
+        alert("Alice has hit an API rate limit. Please wait for a moment...");
         
         const retryAfter =
           response.headers.get("Retry-After") || Math.pow(2, retries);

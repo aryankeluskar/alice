@@ -327,7 +327,7 @@ function fetchCitationInfo(pdfDocument) {
 
         // alert user that we are currently indexing this paper, will take a few seconds
         alert(
-          "We are currently indexing this paper, please wait for 5-6 seconds..."
+          "We are currently indexing this paper, please wait for 5-6 seconds. We will alert you when it's ready."
         );
 
         // Fetch fresh data (extract title, then get Semantic Scholar info)

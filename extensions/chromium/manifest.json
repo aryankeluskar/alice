@@ -19,6 +19,7 @@
   ],
   "host_permissions": [
     "https://arxiv.org/pdf/*",
+    "https://www.arxiv.org/pdf/*",
     "https://biorxiv.org/content/*",
     "https://www.biorxiv.org/content/*"
   ],
@@ -26,6 +27,7 @@
     {
       "matches": [
         "https://arxiv.org/pdf/*",
+        "https://www.arxiv.org/pdf/*",
         "https://biorxiv.org/content/*",
         "https://www.biorxiv.org/content/*"
       ],
@@ -58,7 +60,8 @@
       "matches": [
         "*://arxiv.org/*",
         "*://biorxiv.org/*", 
-        "*://www.biorxiv.org/*"
+        "*://www.biorxiv.org/*",
+        "*://www.arxiv.org/*"
       ],
       "extension_ids": ["*"]
     }
