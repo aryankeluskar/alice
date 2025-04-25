@@ -1528,6 +1528,8 @@ async function fetchWithRetry(url, options, maxRetries = 3) {
 
       // If it's a rate limit error, retry with exponential backoff
       if (response.status === 429) {
+        alert("Alice has hit an API rate limit. Please wait for 5-6 seconds...");
+        
         const retryAfter =
           response.headers.get("Retry-After") || Math.pow(2, retries);
         const waitTime = parseInt(retryAfter, 10) * 1000;
