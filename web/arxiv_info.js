@@ -241,6 +241,12 @@ function fetchCitationInfo(pdfDocument) {
           paperId,
           ". Fetching fresh data."
         );
+
+        // alert user that we are currently indexing this paper, will take a few seconds
+        alert(
+          "We are currently indexing this paper, please wait for 5-6 seconds..."
+        );
+
         // Fetch fresh data (extract title, then get Semantic Scholar info)
         fetchDataForPaper(paperId);
 
