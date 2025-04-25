@@ -24,7 +24,6 @@ function fail(el, reason) {
   $(el).data("failReason", reason);
 }
 
-
 // Helper function to fetch BibTex data from API
 async function fetchBibTexData(arxivId) {
   try {
@@ -37,8 +36,12 @@ async function fetchBibTexData(arxivId) {
   }
 }
 
-
 async function getGeminiFallbackReference(paperId, linkHref, currentElement) {
+    // check if user is still hovering before adding to DOM
+  if ($(currentElement).parent().find("a:hover").length === 0) {
+    return;
+  }
+
   const cachedPaperDataString = localStorage.getItem(`paper_data_${paperId}`);
   const cachedReference = JSON.parse(cachedPaperDataString)["references"];
   const fallback_prompt =
@@ -78,7 +81,10 @@ async function getGeminiFallbackReference(paperId, linkHref, currentElement) {
   for (const reference of cachedReference) {
     // console.log("1title", reference.citedPaper.title);
     // console.log("2title", title);
-    if (reference.citedPaper.title.trim().toLowerCase() === title.trim().toLowerCase()) {
+    if (
+      reference.citedPaper.title.trim().toLowerCase() ===
+      title.trim().toLowerCase()
+    ) {
       console.log("found reference", reference);
       matchingReference = reference;
       break;
@@ -566,12 +572,22 @@ async function fetchAndStoreSemanticScholarData(title, paperId) {
       JSON.stringify(fullPaperData)
     );
     console.log("Stored full paper data for", paperId, ":", fullPaperData);
-    
+
+    if (!referencesData.data || referencesData.data.length === 0) {
+      alert(
+        "This paper is unfortunately not indexed by Alice. Please try again later."
+      );
+      fail(currentElement, "Paper not indexed by Alice");
+      return;
+    }
+
     // If there's an active link being hovered that is waiting for this data, trigger a hover event
-    if (typeof $ !== 'undefined') {
+    if (typeof $ !== "undefined") {
       const $activeHoveredLinks = $("a:hover");
       if ($activeHoveredLinks.length > 0) {
-        console.log("Found active hovered link, triggering hover event to show popup");
+        console.log(
+          "Found active hovered link, triggering hover event to show popup"
+        );
         // Briefly unhover and then rehover to trigger the popup creation
         const $link = $activeHoveredLinks.first();
         $link.trigger("mouseleave");
@@ -1553,7 +1569,6 @@ async function fetchWithRetry(url, options, maxRetries = 3) {
   throw lastError;
 }
 
-
 // Function to create and show the popup with paper data
 async function createAndShowPopup({
   element,
@@ -1563,6 +1578,11 @@ async function createAndShowPopup({
   currentScaleFactor = 1,
   onPopupCreated = null,
 }) {
+  // check if user is still hovering before adding to DOM
+  if ($(element).parent().find("a:hover").length === 0) {
+    return;
+  }
+  
   const paperData = {
     title: matchingEntry.getElementsByTagName("title")[0]?.textContent || "",
     authors: Array.from(matchingEntry.getElementsByTagName("author") || [])
@@ -1573,6 +1593,13 @@ async function createAndShowPopup({
     date: matchingEntry.getElementsByTagName("published")[0]?.textContent || "",
     link: matchingEntry.getElementsByTagName("id")[0]?.textContent || "",
   };
+
+  // Check if abstract contains English alphabets
+  const hasEnglishAlphabets = /[a-zA-Z]/.test(paperData.abstract);
+  if (!hasEnglishAlphabets) {
+    paperData.abstract =
+      "This paper's abstract has been elided by the publisher. Paper or abstract should be available on the publisher's website, which is subject to the license by the author or copyright owner provided with this content.";
+  }
 
   // Destructure paper data with defaults
   const {
@@ -1590,7 +1617,10 @@ async function createAndShowPopup({
     const authorString = rawAuthors.join(", ");
     const searchQuery = encodeURIComponent(`${fullTitle} by ${authorString}`);
     finalLink = `https://scholar.google.com/scholar?hl=en&as_sdt=0%2C3&q=${searchQuery}&btnG=`;
-    console.log("No ArXiv link found, using Google Scholar fallback:", finalLink);
+    console.log(
+      "No ArXiv link found, using Google Scholar fallback:",
+      finalLink
+    );
   }
 
   // Limit authors to 16 words
@@ -1626,8 +1656,7 @@ async function createAndShowPopup({
       // If even the first author has more than 16 words, truncate it
       const excessWordsCount = authorWords.length - 16;
       authorText =
-        authorWords.slice(0, 16).join(" ") +
-        ` and ${excessWordsCount} others`;
+        authorWords.slice(0, 16).join(" ") + ` and ${excessWordsCount} others`;
     }
   }
 
@@ -1636,10 +1665,9 @@ async function createAndShowPopup({
     month: "short",
     day: "numeric",
   };
-  const dateString = new Intl.DateTimeFormat(
-    "en-US",
-    dateStringOptions
-  ).format(new Date(date));
+  const dateString = new Intl.DateTimeFormat("en-US", dateStringOptions).format(
+    new Date(date)
+  );
 
   // Load required libraries if not already loaded
   if (!window.marked && !$('script[src*="marked"]').length) {
@@ -1679,8 +1707,17 @@ async function createAndShowPopup({
         <div class="arxiv-title-row">
           <div class="arxiv-main-content"> 
             <div style="display: flex; align-items: center; gap: calc(10px * var(--space-scale-factor));">
+              ${
+                hasEnglishAlphabets
+                  ? `
               <span class="arxiv-title" style="font-family: 'Solway', serif;font-size: calc(12px * var(--total-scale-factor, 1));">${fullTitle}</span>
-              <a href="${finalLink}" title="${finalLink.includes('scholar.google.com') ? 'View on Google Scholar' : 'View paper on arXiv'}" target="_blank" class="arxiv-link" aria-label="${finalLink.includes('scholar.google.com') ? 'View on Google Scholar' : 'View paper on arXiv'}" style="display: inline-flex; align-items: center;"><img src="images/${finalLink.includes('scholar.google.com') ? 'link-icon.svg' : 'link-icon.svg'}" alt="${finalLink.includes('scholar.google.com') ? 'External link to Google Scholar' : 'External link to arXiv paper'}" width="calc(14px * var(--total-scale-factor, 1))" height="calc(14px * var(--total-scale-factor, 1))" style="margin-left: calc(5px * var(--space-scale-factor));"/></a>
+              <a href="${finalLink}" title="${finalLink.includes("scholar.google.com") ? "View on Google Scholar" : "View paper on arXiv"}" target="_blank" class="arxiv-link" aria-label="${finalLink.includes("scholar.google.com") ? "View on Google Scholar" : "View paper on arXiv"}" style="display: inline-flex; align-items: center;"><img src="images/${finalLink.includes("scholar.google.com") ? "link-icon.svg" : "link-icon.svg"}" alt="${finalLink.includes("scholar.google.com") ? "External link to Google Scholar" : "External link to arXiv paper"}" width="calc(14px * var(--total-scale-factor, 1))" height="calc(14px * var(--total-scale-factor, 1))" style="margin-left: calc(5px * var(--space-scale-factor));"/></a>
+              `
+                  : `
+              <span class="arxiv-title" style="font-family: 'Solway', serif;font-size: calc(12px * var(--total-scale-factor, 1)); flex: 1;">${fullTitle}</span>
+              <a href="${finalLink}" title="${finalLink.includes("scholar.google.com") ? "View on Google Scholar" : "View paper on arXiv"}" target="_blank" class="arxiv-link" aria-label="${finalLink.includes("scholar.google.com") ? "View on Google Scholar" : "View paper on arXiv"}" style="display: inline-flex; align-items: center;"><img src="images/${finalLink.includes("scholar.google.com") ? "link-icon.svg" : "link-icon.svg"}" alt="${finalLink.includes("scholar.google.com") ? "External link to Google Scholar" : "External link to arXiv paper"}" width="calc(14px * var(--total-scale-factor, 1))" height="calc(14px * var(--total-scale-factor, 1))"/></a>
+              `
+              }
             </div>
             <div class="arxiv-info-row">
               <div class="arxiv_info_author" style="font-family: 'Solway', serif;">${authorText}</div>
@@ -1688,9 +1725,17 @@ async function createAndShowPopup({
             </div>
           </div>
           <div class="arxiv-controls">
+            ${
+              hasEnglishAlphabets
+                ? `
             <button class="alice-toggle" style="margin-bottom: 5px; vertical-align: middle;" data-view="abstract">Summary</button>
             <button class="alice-toggle" style="margin-bottom: 10px; vertical-align: middle; display: none;" data-view="code">Code</button>
             <button class="alice-toggle" style="margin-bottom: 10px; vertical-align: middle;" data-view="bibtex">BibTex</button>
+            `
+                : `
+            <button class="alice-toggle" style="margin-bottom: 10px; vertical-align: middle; display: none;" data-view="code">Code</button>
+            `
+            }
           </div>
         </div>
           ‎  
@@ -1713,8 +1758,17 @@ async function createAndShowPopup({
       <div class="arxiv-title-row">
           <div class="arxiv-main-content">
             <div style="display: flex; align-items: center; gap: calc(10px * var(--space-scale-factor));">
+              ${
+                hasEnglishAlphabets
+                  ? `
               <span class="arxiv-title" style="font-family: 'Solway', serif;font-size: calc(12px * var(--total-scale-factor, 1));">${fullTitle}</span>
-              <a href="${finalLink}" title="${finalLink.includes('scholar.google.com') ? 'View on Google Scholar' : 'View paper on arXiv'}" target="_blank" class="arxiv-link" aria-label="${finalLink.includes('scholar.google.com') ? 'View on Google Scholar' : 'View paper on arXiv'}" style="display: inline-flex; align-items: center;"><img src="images/${finalLink.includes('scholar.google.com') ? 'link-icon.svg' : 'link-icon.svg'}" alt="${finalLink.includes('scholar.google.com') ? 'External link to Google Scholar' : 'External link to arXiv paper'}" width="calc(14px * var(--total-scale-factor, 1))" height="calc(14px * var(--total-scale-factor, 1))" style="margin-left: calc(5px * var(--space-scale-factor));"/></a>
+              <a href="${finalLink}" title="${finalLink.includes("scholar.google.com") ? "View on Google Scholar" : "View paper on arXiv"}" target="_blank" class="arxiv-link" aria-label="${finalLink.includes("scholar.google.com") ? "View on Google Scholar" : "View paper on arXiv"}" style="display: inline-flex; align-items: center;"><img src="images/${finalLink.includes("scholar.google.com") ? "link-icon.svg" : "link-icon.svg"}" alt="${finalLink.includes("scholar.google.com") ? "External link to Google Scholar" : "External link to arXiv paper"}" width="calc(14px * var(--total-scale-factor, 1))" height="calc(14px * var(--total-scale-factor, 1))" style="margin-left: calc(5px * var(--space-scale-factor));"/></a>
+              `
+                  : `
+              <span class="arxiv-title" style="font-family: 'Solway', serif;font-size: calc(12px * var(--total-scale-factor, 1)); width="calc(14px * var(--total-scale-factor, 1))";">${fullTitle}</span>
+              <a href="${finalLink}" title="${finalLink.includes("scholar.google.com") ? "View on Google Scholar" : "View paper on arXiv"}" target="_blank" class="arxiv-link" aria-label="${finalLink.includes("scholar.google.com") ? "View on Google Scholar" : "View paper on arXiv"}" style="display: inline-flex; align-items: center;"><img src="images/${finalLink.includes("scholar.google.com") ? "link-icon.svg" : "link-icon.svg"}" alt="${finalLink.includes("scholar.google.com") ? "External link to Google Scholar" : "External link to arXiv paper"}" width="calc(14px * var(--total-scale-factor, 1))" height="calc(14px * var(--total-scale-factor, 1))"/></a>
+              `
+              }
             </div>
             <div class="arxiv-info-row">
               <div class="arxiv_info_author" style="font-family: 'Solway', serif;">${authorText}</div>
@@ -1722,9 +1776,17 @@ async function createAndShowPopup({
             </div>
           </div>
           <div class="arxiv-controls">
+            ${
+              hasEnglishAlphabets
+                ? `
             <button class="alice-toggle" style="margin-bottom: 5px; vertical-align: middle;" data-view="abstract">Summary</button>
             <button class="alice-toggle" style="margin-bottom: 10px; vertical-align: middle; display: none;" data-view="code">Code</button>
             <button class="alice-toggle" style="margin-bottom: 10px; vertical-align: middle;" data-view="bibtex">BibTex</button>
+            `
+                : `
+            <button class="alice-toggle" style="margin-bottom: 10px; vertical-align: middle; display: none;" data-view="code">Code</button>
+            `
+            }
           </div>
         </div>
       </div>
@@ -1838,6 +1900,8 @@ function setupButtonEventListeners($popup, popupId, state) {
     codeContent,
   } = state;
 
+  const parser = new DOMParser();
+
   // Add click event listener to the toggle button
   $(`#${popupId} .alice-toggle[data-view="abstract"]`).on(
     "click",
@@ -1905,14 +1969,18 @@ function setupButtonEventListeners($popup, popupId, state) {
               const xmlData = await apiResponse.text();
               const xmlDoc = parser.parseFromString(xmlData, "text/xml");
 
-              const summary = xmlDoc.querySelector("summary")?.textContent || "";
+              const summary =
+                xmlDoc.querySelector("summary")?.textContent || "";
               const title = xmlDoc.querySelector("title")?.textContent || "";
               const authors = Array.from(xmlDoc.querySelectorAll("author name"))
                 .map(el => el.textContent)
                 .join(", ");
 
               arxivText = `Title: ${title}\nAuthors: ${authors}\n\nAbstract: ${summary}`;
-              console.log("Successfully extracted paper data from ArXiv API:", arxivText);
+              console.log(
+                "Successfully extracted paper data from ArXiv API:",
+                arxivText
+              );
             } else {
               // If we can't extract the ID, try searching by title
               console.log("Could not extract arXiv ID, searching by title");
@@ -1932,7 +2000,11 @@ function setupButtonEventListeners($popup, popupId, state) {
               const searchEndpoint = `http://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(keywords)}&start=0&max_results=1`;
               console.log("Using ArXiv search endpoint:", searchEndpoint);
 
-              const searchResponse = await fetchWithRetry(searchEndpoint, {}, 2);
+              const searchResponse = await fetchWithRetry(
+                searchEndpoint,
+                {},
+                2
+              );
               const searchData = await searchResponse.text();
               const searchDoc = parser.parseFromString(searchData, "text/xml");
 
@@ -1942,15 +2014,22 @@ function setupButtonEventListeners($popup, popupId, state) {
               }
 
               // Extract all necessary information from the search result
-              const title = firstEntry.querySelector("title")?.textContent || "";
-              const summary = firstEntry.querySelector("summary")?.textContent || "";
-              const authors = Array.from(firstEntry.querySelectorAll("author name"))
+              const title =
+                firstEntry.querySelector("title")?.textContent || "";
+              const summary =
+                firstEntry.querySelector("summary")?.textContent || "";
+              const authors = Array.from(
+                firstEntry.querySelectorAll("author name")
+              )
                 .map(el => el.textContent)
                 .join(", ");
 
               // Construct the arxivText in the same format as the direct API response
               arxivText = `Title: ${title}\nAuthors: ${authors}\n\nAbstract: ${summary}`;
-              console.log("Successfully extracted paper data from ArXiv search:", arxivText);
+              console.log(
+                "Successfully extracted paper data from ArXiv search:",
+                arxivText
+              );
             }
           } catch (error) {
             console.error("Error fetching from ArXiv:", error);
@@ -1988,7 +2067,9 @@ function setupButtonEventListeners($popup, popupId, state) {
               containsCode = containsPythonCode(llmSummaryContent);
 
               if (containsCode) {
-                console.log(`Detected code in response, retry ${retryCount + 1}`);
+                console.log(
+                  `Detected code in response, retry ${retryCount + 1}`
+                );
                 retryCount++;
               }
             } while (containsCode && retryCount < 3);
@@ -2263,7 +2344,6 @@ function setupButtonEventListeners($popup, popupId, state) {
   );
 }
 
-
 // export all functions
 export {
   fail,
@@ -2289,5 +2369,5 @@ export {
   delay,
   fetchBibTexData,
   createAndShowPopup,
-  setupButtonEventListeners
+  setupButtonEventListeners,
 };

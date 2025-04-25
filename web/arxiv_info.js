@@ -7,12 +7,10 @@ import {
   getStyle,
   getBibtexReferenceFromInternalLink,
   parseBibtexReference,
-  createAndShowPopup
+  createAndShowPopup,
 } from "./alice_helper.js";
 
-// Ensure DOMParser is available globally
 const parser = new DOMParser();
-
 function fetchCitationInfo(pdfDocument) {
   // Check if jQuery is loaded, if not, load it dynamically
   if (typeof jQuery === "undefined" || typeof $ === "undefined") {
@@ -245,6 +243,12 @@ function fetchCitationInfo(pdfDocument) {
         );
         // Fetch fresh data (extract title, then get Semantic Scholar info)
         fetchDataForPaper(paperId);
+
+        // if references are empty, then return
+        if (!cachedPaperData || cachedPaperData.references.length === 0) {
+          fail(this, "Paper not indexed by Alice");
+          return;
+        }
       }
 
       // if "cite" not in href, ignore
@@ -398,8 +402,10 @@ function fetchCitationInfo(pdfDocument) {
         httpRequest.onloadend = onLoadEnd.bind(currentElement);
         // Set timeout for the ArXiv API request
         httpRequest.timeout = 1000;
-        httpRequest.ontimeout = function() {
-          console.log("ArXiv API request timed out after 1000ms, falling back to Semantic Scholar");
+        httpRequest.ontimeout = function () {
+          console.log(
+            "ArXiv API request timed out after 1000ms, falling back to Semantic Scholar"
+          );
           getGeminiFallbackReference(paperId, linkHref, currentElement)
             .then(result => {
               if (result) {
@@ -749,9 +755,14 @@ function fetchCitationInfo(pdfDocument) {
         if (!finalLink || !finalLink.includes("arxiv.org")) {
           // Create Google Scholar search URL
           const authorString = rawAuthors.join(", ");
-          const searchQuery = encodeURIComponent(`${fullTitle} by ${authorString}`);
+          const searchQuery = encodeURIComponent(
+            `${fullTitle} by ${authorString}`
+          );
           finalLink = `https://scholar.google.com/scholar?hl=en&as_sdt=0%2C3&q=${searchQuery}&btnG=`;
-          console.log("No ArXiv link found, using Google Scholar fallback:", finalLink);
+          console.log(
+            "No ArXiv link found, using Google Scholar fallback:",
+            finalLink
+          );
         }
 
         // Limit authors to 16 words
