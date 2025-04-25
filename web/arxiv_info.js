@@ -193,6 +193,71 @@ function fetchCitationInfo(pdfDocument) {
       const currentUrl = window.location.href;
       let paperId = "";
 
+      // if "cite" not in href, ignore
+      const linkHref = $(this).attr("href");
+      if (!linkHref.includes("cite")) {
+        return;
+      }
+
+      // First check if we have this citation in cached_final_refs
+      const cachedFinalRefs = JSON.parse(localStorage.getItem("cached_final_refs") || "{}");
+      const citationKey = linkHref.split("cite.")[1]; // e.g. "keluskar2024ambiguity"
+      
+      if (cachedFinalRefs[citationKey]) {
+        console.log("Found cached final reference for citation:", citationKey);
+        const cachedRef = cachedFinalRefs[citationKey];
+        
+        // Create XML entry from cached data
+        const xmlDoc = document.implementation.createDocument("http://www.w3.org/2005/Atom", "entry", null);
+        const entry = xmlDoc.documentElement;
+        entry.setAttribute("xmlns", "http://www.w3.org/2005/Atom");
+
+        // Add id element (link)
+        const idElement = xmlDoc.createElement("id");
+        idElement.textContent = cachedRef.link || "";
+        entry.appendChild(idElement);
+
+        // Add title element
+        const titleElement = xmlDoc.createElement("title");
+        titleElement.textContent = cachedRef.title;
+        entry.appendChild(titleElement);
+
+        // Add summary element
+        const summaryElement = xmlDoc.createElement("summary");
+        summaryElement.textContent = cachedRef.abstract;
+        entry.appendChild(summaryElement);
+
+        // Add published element
+        const publishedElement = xmlDoc.createElement("published");
+        publishedElement.textContent = `${cachedRef.year}-01-01T00:00:00Z`;
+        entry.appendChild(publishedElement);
+
+        // Add author elements
+        const authors = cachedRef.authors.split(", ");
+        authors.forEach(authorName => {
+          const authorElement = xmlDoc.createElement("author");
+          const nameElement = xmlDoc.createElement("name");
+          nameElement.textContent = authorName;
+          authorElement.appendChild(nameElement);
+          entry.appendChild(authorElement);
+        });
+
+        // Create and show popup with cached data
+        createAndShowPopup({
+          element: this,
+          popupId,
+          tipsyDirection: "sw", // Default direction
+          matchingEntry: entry,
+          currentScaleFactor,
+          onPopupCreated: $popup => {
+            activeLink = this;
+            activePopup = $popup;
+          },
+        });
+        
+        return;
+      }
+
       // Extract paper ID based on URL pattern
       if (currentUrl.includes("arxiv.org")) {
         // For arXiv URLs like .../1810.04805
@@ -315,7 +380,6 @@ function fetchCitationInfo(pdfDocument) {
 
       console.log("tipsyDirection", tipsyDirection);
 
-      const linkHref = $(this).attr("href");
       const bibtexRef = getBibtexReferenceFromInternalLink(linkHref);
       const surroundingText = $(this).parent().text().trim();
 
@@ -453,6 +517,8 @@ function fetchCitationInfo(pdfDocument) {
             console.log(
               "ArXiv API failed or returned empty results, trying Semantic Scholar fallback..."
             );
+            // log the error
+            console.error("Error in ArXiv API:", error);
             let result = await getGeminiFallbackReference(
               paperId,
               linkHref,
@@ -755,6 +821,21 @@ function fetchCitationInfo(pdfDocument) {
           rawAuthors = Array.from(
             matchingEntry.getElementsByTagName("author")
           ).map(a => a.children[0].textContent);
+
+        // Store the data in cached_final_refs
+        const citationKey = linkHref.split("cite.")[1];
+        if (citationKey) {
+          const cachedFinalRefs = JSON.parse(localStorage.getItem("cached_final_refs") || "{}");
+          cachedFinalRefs[citationKey] = {
+            title: fullTitle,
+            abstract: abstract,
+            authors: rawAuthors.join(", "),
+            year: new Date(date).getFullYear(),
+            link: link
+          };
+          localStorage.setItem("cached_final_refs", JSON.stringify(cachedFinalRefs));
+          console.log("Stored paper data in cached_final_refs for citation:", citationKey);
+        }
 
         // Check if we have a valid ArXiv link
         let finalLink = link;
