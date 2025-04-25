@@ -1,6 +1,6 @@
 # Alice 🔍 - Browser Extension for Research Papers
 
-<div align="left">
+<div align="center">
   <a href="https://github.com/aryankeluskar/alice/stargazers">
     <img src="https://img.shields.io/github/stars/aryankeluskar/alice?style=flat-square&logo=github" alt="GitHub Stars">
   </a>
