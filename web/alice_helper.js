@@ -37,7 +37,7 @@ async function fetchBibTexData(arxivId) {
 }
 
 async function getGeminiFallbackReference(paperId, linkHref, currentElement) {
-    // check if user is still hovering before adding to DOM
+  // check if user is still hovering before adding to DOM
   if ($(currentElement).parent().find("a:hover").length === 0) {
     return;
   }
@@ -124,16 +124,24 @@ async function getGeminiFallbackReference(paperId, linkHref, currentElement) {
       // Cache the final reference data
       const citationKey = linkHref.split("cite.")[1];
       if (citationKey) {
-        const cachedFinalRefs = JSON.parse(localStorage.getItem("cached_final_refs") || "{}");
+        const cachedFinalRefs = JSON.parse(
+          localStorage.getItem("cached_final_refs") || "{}"
+        );
         cachedFinalRefs[citationKey] = {
           title: paperData.title,
           abstract: paperData.abstract || "",
           authors: authorsString,
           year: paperData.year,
-          link: paperUrl
+          link: paperUrl,
         };
-        localStorage.setItem("cached_final_refs", JSON.stringify(cachedFinalRefs));
-        console.log("Stored paper data in cached_final_refs for citation:", citationKey);
+        localStorage.setItem(
+          "cached_final_refs",
+          JSON.stringify(cachedFinalRefs)
+        );
+        console.log(
+          "Stored paper data in cached_final_refs for citation:",
+          citationKey
+        );
       }
 
       // Success message
@@ -208,16 +216,20 @@ async function getGeminiFallbackReference(paperId, linkHref, currentElement) {
     } catch (error) {
       console.error("Error fetching Semantic Scholar data:", error);
 
-      if (error.message.includes("rate limit") || error.message.includes("429")) {
-        alert("Semantic Scholar API rate limit reached. Please wait a moment and try again later.");
+      if (
+        error.message.includes("rate limit") ||
+        error.message.includes("429")
+      ) {
+        alert(
+          "Semantic Scholar API rate limit reached. Please wait a moment and try again later."
+        );
       } else {
-        alert("We have hit a rate limit on the Semantic Scholar API. Please wait for a moment and try again later.");
+        alert(
+          "We have hit a rate limit on the Semantic Scholar API. Please wait for a moment and try again later."
+        );
       }
-      
-      fail(
-        currentElement,
-        `Failed to fetch paper details: ${error.message}`
-      );
+
+      fail(currentElement, `Failed to fetch paper details: ${error.message}`);
     }
   } else {
     console.log("No matching reference found or missing paper ID");
@@ -511,7 +523,7 @@ async function extractTitleWithGemini(pageText) {
           {
             parts: [
               {
-                text: `Extract only the title of this academic paper. Return ONLY the title, nothing else. If you cannot find a clear title, return NULL.\n\nText from first page:\n${pageText}`,
+                text: `Extract only the FORMATTED title of this academic paper. If the title doesn't feel properly formatted as english text, then fix the formatting. Return ONLY the title, nothing else. If you cannot find a clear title, return NULL.\n\nText from first page:\n${pageText}`,
               },
             ],
           },
@@ -592,9 +604,7 @@ async function fetchAndStoreSemanticScholarData(title, paperId) {
     console.log("Stored full paper data for", paperId, ":", fullPaperData);
 
     if (!referencesData.data || referencesData.data.length === 0) {
-      alert(
-        "This paper cannot be indexed by Alice. Please try again later."
-      );
+      alert("This paper cannot be indexed by Alice. Please try again later.");
       fail(currentElement, "Paper not indexed by Alice");
       return;
     }
@@ -1549,7 +1559,7 @@ async function fetchWithRetry(url, options, maxRetries = 3) {
       // If it's a rate limit error, retry with exponential backoff
       if (response.status === 429) {
         alert("Alice has hit an API rate limit. Please wait for a moment...");
-        
+
         const retryAfter =
           response.headers.get("Retry-After") || Math.pow(2, retries);
         const waitTime = parseInt(retryAfter, 10) * 1000;
@@ -1604,7 +1614,7 @@ async function createAndShowPopup({
   if ($(element).parent().find("a:hover").length === 0) {
     return;
   }
-  
+
   const paperData = {
     title: matchingEntry.getElementsByTagName("title")[0]?.textContent || "",
     authors: Array.from(matchingEntry.getElementsByTagName("author") || [])
@@ -1682,14 +1692,21 @@ async function createAndShowPopup({
     }
   }
 
-  const dateStringOptions = {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  };
-  const dateString = new Intl.DateTimeFormat("en-US", dateStringOptions).format(
-    new Date(date)
-  );
+  let dateString = "Publication date not available";
+
+  try {
+    const dateStringOptions = {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    };
+    dateString = new Intl.DateTimeFormat("en-US", dateStringOptions).format(
+      new Date(date)
+    );
+  } catch (error) {
+    console.error("Error parsing date:", error);
+    dateString = "Publication date not available";
+  }
 
   // Load required libraries if not already loaded
   if (!window.marked && !$('script[src*="marked"]').length) {
@@ -1743,7 +1760,11 @@ async function createAndShowPopup({
             </div>
             <div class="arxiv-info-row">
               <div class="alice_main_author" style="font-family: 'Solway', serif;">${authorText}</div>
-              <div class="alice_main_date" style="font-family: 'Solway', serif;">Published on ${dateString}.</div>
+              ${
+                dateString !== "Publication date not available"
+                  ? `<div class="alice_main_date" style="font-family: 'Solway', serif;">Published on ${dateString}.</div>`
+                  : `<div class="alice_main_date" style="font-family: 'Solway', serif;">Publication date not available.</div>`
+              }
             </div>
           </div>
           <div class="arxiv-controls">
@@ -1794,7 +1815,11 @@ async function createAndShowPopup({
             </div>
             <div class="arxiv-info-row">
               <div class="alice_main_author" style="font-family: 'Solway', serif;">${authorText}</div>
-              <div class="alice_main_date" style="font-family: 'Solway', serif;">Published on ${dateString}.</div>
+              ${
+                dateString !== "Publication date not available"
+                  ? `<div class="alice_main_date" style="font-family: 'Solway', serif;">Published on ${dateString}.</div>`
+                  : `<div class="alice_main_date" style="font-family: 'Solway', serif;">Publication date not available.</div>`
+              }
             </div>
           </div>
           <div class="arxiv-controls">
