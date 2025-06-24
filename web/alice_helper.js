@@ -94,9 +94,19 @@ async function getGeminiFallbackReference(paperId, linkHref, currentElement) {
   if (matchingReference && matchingReference.citedPaper.paperId) {
     const semanticScholarId = matchingReference.citedPaper.paperId;
     try {
-      // Fetch data from Semantic Scholar API
+      // Fetch data from Semantic Scholar API with retry logic and proper headers
       const apiUrl = `https://api.semanticscholar.org/graph/v1/paper/${semanticScholarId}?fields=title,abstract,year,openAccessPdf,authors`;
-      const response = await fetch(apiUrl);
+      
+      // Add headers to make the request look more like a browser request
+      const requestOptions = {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          'Accept': 'application/json',
+          'Accept-Language': 'en-US,en;q=0.9',
+        }
+      };
+      
+      const response = await queuedFetch(apiUrl, requestOptions, 5); // Use queued fetch to prevent concurrent requests
 
       if (!response.ok) {
         throw new Error(
@@ -553,8 +563,18 @@ async function fetchAndStoreSemanticScholarData(title, paperId) {
   );
   try {
     // First get Semantic Scholar paper ID using title match
-    const matchResponse = await fetchWithRetry(
-      `https://api.semanticscholar.org/graph/v1/paper/search/match?query=${encodeURIComponent(title)}`
+    const requestOptions = {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'application/json',
+        'Accept-Language': 'en-US,en;q=0.9',
+      }
+    };
+    
+    const matchResponse = await queuedFetch(
+      `https://api.semanticscholar.org/graph/v1/paper/search/match?query=${encodeURIComponent(title)}`,
+      requestOptions,
+      5
     );
 
     if (!matchResponse.ok) {
@@ -581,8 +601,10 @@ async function fetchAndStoreSemanticScholarData(title, paperId) {
     console.log(`Semantic Scholar ID found for "${title}": ${semanticPaperId}`);
 
     // Then get references using the Semantic Scholar paper ID
-    const referencesResponse = await fetchWithRetry(
-      `https://api.semanticscholar.org/graph/v1/paper/${semanticPaperId}/references?fields=abstract&offset=0&limit=999`
+    const referencesResponse = await queuedFetch(
+      `https://api.semanticscholar.org/graph/v1/paper/${semanticPaperId}/references?fields=abstract&offset=0&limit=999`,
+      requestOptions,
+      5
     );
 
     const referencesData = await referencesResponse.json();
@@ -653,7 +675,7 @@ async function fetchPaperText(arxivLink) {
     console.log("Extracted arXiv ID:", arxivId);
 
     // Use ArXiv API to get paper details
-    const apiEndpoint = `http://export.arxiv.org/api/query?id_list=${arxivId}`;
+    const apiEndpoint = `https://export.arxiv.org/api/query?id_list=${arxivId}`;
     const apiResponse = await fetchWithRetry(apiEndpoint, {}, 2);
 
     const xmlData = await apiResponse.text();
@@ -1536,14 +1558,102 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// Request queue to prevent concurrent API requests that trigger rate limits
+const apiRequestQueue = {
+  semanticScholar: [],
+  arxiv: [],
+  processing: {
+    semanticScholar: false,
+    arxiv: false
+  }
+};
+
+// Simple cache for API responses to reduce redundant requests
+const apiCache = new Map();
+const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
+
+function getCacheKey(url, options) {
+  return `${url}_${JSON.stringify(options || {})}`;
+}
+
+function getCachedResponse(url, options) {
+  const key = getCacheKey(url, options);
+  const cached = apiCache.get(key);
+  
+  if (cached && Date.now() - cached.timestamp < CACHE_EXPIRY) {
+    console.log(`Using cached response for ${url}`);
+    return Promise.resolve(cached.response.clone());
+  }
+  
+  return null;
+}
+
+function setCachedResponse(url, options, response) {
+  const key = getCacheKey(url, options);
+  apiCache.set(key, {
+    response: response.clone(),
+    timestamp: Date.now()
+  });
+}
+
+async function queuedFetch(url, options = {}, maxRetries = 3) {
+  // Check cache first
+  const cachedResponse = getCachedResponse(url, options);
+  if (cachedResponse) {
+    return cachedResponse;
+  }
+  
+  const apiType = url.includes('semanticscholar.org') ? 'semanticScholar' : 
+                  url.includes('arxiv.org') ? 'arxiv' : 'other';
+  
+  if (apiType === 'other') {
+    // For non-rate-limited APIs, proceed directly
+    const response = await fetchWithRetry(url, options, maxRetries);
+    setCachedResponse(url, options, response);
+    return response;
+  }
+  
+  return new Promise((resolve, reject) => {
+    apiRequestQueue[apiType].push({ url, options, maxRetries, resolve, reject });
+    processQueue(apiType);
+  });
+}
+
+async function processQueue(apiType) {
+  if (apiRequestQueue.processing[apiType] || apiRequestQueue[apiType].length === 0) {
+    return;
+  }
+  
+  apiRequestQueue.processing[apiType] = true;
+  
+  while (apiRequestQueue[apiType].length > 0) {
+    const { url, options, maxRetries, resolve, reject } = apiRequestQueue[apiType].shift();
+    
+    try {
+      const response = await fetchWithRetry(url, options, maxRetries);
+      setCachedResponse(url, options, response);
+      resolve(response);
+    } catch (error) {
+      reject(error);
+    }
+    
+    // Add a small delay between requests to the same API
+    if (apiRequestQueue[apiType].length > 0) {
+      await delay(apiType === 'semanticScholar' ? 1000 : 500);
+    }
+  }
+  
+  apiRequestQueue.processing[apiType] = false;
+}
+
 // Retry function with exponential backoff
-async function fetchWithRetry(url, options, maxRetries = 3) {
+async function fetchWithRetry(url, options = {}, maxRetries = 3) {
   let retries = 0;
   let lastError;
 
   // Add CORS proxy for ArXiv API requests if needed
   if (
-    url.startsWith("http://export.arxiv.org") &&
+    url.startsWith("https://export.arxiv.org") &&
     !url.startsWith("https://")
   ) {
     // Use HTTPS instead of HTTP
@@ -1558,13 +1668,28 @@ async function fetchWithRetry(url, options, maxRetries = 3) {
 
       // If it's a rate limit error, retry with exponential backoff
       if (response.status === 429) {
-        alert("Alice has hit an API rate limit. Please wait for a moment...");
+        const isSemanticScholar = url.includes('semanticscholar.org');
+        
+        if (retries === 0 && isSemanticScholar) {
+          alert("Alice has hit the Semantic Scholar API rate limit. Please wait while we retry...");
+        }
 
-        const retryAfter =
-          response.headers.get("Retry-After") || Math.pow(2, retries);
-        const waitTime = parseInt(retryAfter, 10) * 1000;
+        let waitTime;
+        const retryAfterHeader = response.headers.get("Retry-After");
+        
+        if (retryAfterHeader) {
+          // If server provides retry-after header, use it
+          waitTime = parseInt(retryAfterHeader, 10) * 1000;
+        } else {
+          // Use exponential backoff with longer initial wait for Semantic Scholar
+          const baseWait = isSemanticScholar ? 5000 : 1000; // 5 seconds for S2, 1 second for others
+          waitTime = baseWait * Math.pow(2, retries);
+        }
+        
+        // Cap the wait time at 60 seconds
+        waitTime = Math.min(waitTime, 60000);
 
-        console.log(`Rate limited. Retrying after ${waitTime}ms...`);
+        console.log(`Rate limited (429). Retrying after ${waitTime}ms...`);
         await delay(waitTime);
         retries++;
         continue;
@@ -1574,6 +1699,7 @@ async function fetchWithRetry(url, options, maxRetries = 3) {
         throw new Error(`API responded with status ${response.status}`);
       }
 
+      // Success - clear any rate limit alerts for subsequent requests
       return response;
     } catch (error) {
       lastError = error;
@@ -2009,7 +2135,7 @@ function setupButtonEventListeners($popup, popupId, state) {
               arxivId = arxivIdMatch[1];
               console.log("Extracted arXiv ID:", arxivId);
 
-              const apiEndpoint = `http://export.arxiv.org/api/query?id_list=${arxivId}`;
+              const apiEndpoint = `https://export.arxiv.org/api/query?id_list=${arxivId}`;
               console.log("Using ArXiv API endpoint:", apiEndpoint);
 
               const apiResponse = await fetchWithRetry(apiEndpoint, {}, 2);
@@ -2044,7 +2170,7 @@ function setupButtonEventListeners($popup, popupId, state) {
               console.log("Using keywords for search:", keywords);
 
               // Use all_fields search instead of just title for better matching
-              const searchEndpoint = `http://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(keywords)}&start=0&max_results=1`;
+              const searchEndpoint = `https://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(keywords)}&start=0&max_results=1`;
               console.log("Using ArXiv search endpoint:", searchEndpoint);
 
               const searchResponse = await fetchWithRetry(
@@ -2325,7 +2451,7 @@ function setupButtonEventListeners($popup, popupId, state) {
             console.log("Using keywords for search:", keywords);
 
             // Use all_fields search instead of just title for better matching
-            const searchEndpoint = `http://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(keywords)}&start=0&max_results=1`;
+            const searchEndpoint = `https://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(keywords)}&start=0&max_results=1`;
             console.log("Using ArXiv search endpoint:", searchEndpoint);
 
             const searchResponse = await fetchWithRetry(searchEndpoint, {}, 2);

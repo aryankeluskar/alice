@@ -11,6 +11,7 @@ If you are developing a custom solution, first check the examples at https://git
 Note that the translations for PDF.js in the `l10n` folder are imported from the Nightly channel of Mozilla Firefox, such that we don't have to maintain them ourselves. This means that we will not accept pull requests that add new languages and/or modify existing translations, unless the corresponding changes have been made in Mozilla Firefox first.
 
 See also:
+
 - https://github.com/mozilla/pdf.js/wiki/Frequently-Asked-Questions
 - https://github.com/mozilla/pdf.js/wiki/Contributing
 - https://github.com/mozilla/pdf.js/blob/master/README.md

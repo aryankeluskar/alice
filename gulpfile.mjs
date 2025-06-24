@@ -1524,7 +1524,7 @@ gulp.task(
         gulp
           .src(CHROME_WEB_FILES, { base: "web/", encoding: false })
           .pipe(gulp.dest(CHROME_BUILD_CONTENT_DIR + "web")),
-        
+
         // Explicitly copy jQuery for the ArXiv Info feature
         gulp
           .src("web/jquery-3.6.0.min.js", { encoding: false })

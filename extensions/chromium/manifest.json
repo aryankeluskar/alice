@@ -59,7 +59,7 @@
       ],
       "matches": [
         "*://arxiv.org/*",
-        "*://biorxiv.org/*", 
+        "*://biorxiv.org/*",
         "*://www.biorxiv.org/*",
         "*://www.arxiv.org/*"
       ],

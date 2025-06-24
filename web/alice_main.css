@@ -6,8 +6,13 @@ Adapted from:
 // released under the MIT license 
 */
 
-.tipsy { font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif; position: absolute; padding: calc(4px * var(--total-scale-factor, 1)); z-index: 100000; }
-.tipsy-inner { 
+.tipsy {
+  font-family: Cambria, Cochin, Georgia, Times, "Times New Roman", serif;
+  position: absolute;
+  padding: calc(4px * var(--total-scale-factor, 1));
+  z-index: 100000;
+}
+.tipsy-inner {
   background-color: rgb(192 169 255);
   color: black;
   width: calc(300px * var(--total-scale-factor, 1));
@@ -18,23 +23,81 @@ Adapted from:
   -webkit-border-radius: calc(6px * var(--total-scale-factor, 1));
 }
 
-.tipsy-arrow { position: absolute; width: 0; height: 0; line-height: 0; border: calc(5px * var(--total-scale-factor, 1)) dashed rgb(192 169 255); }
+.tipsy-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  line-height: 0;
+  border: calc(5px * var(--total-scale-factor, 1)) dashed rgb(192 169 255);
+}
 
 /* Rules to colour arrows */
-.tipsy-arrow-n { border-bottom-color: #000; }
-.tipsy-arrow-s { border-top-color: #000; }
-.tipsy-arrow-e { border-left-color: #000; }
-.tipsy-arrow-w { border-right-color: #000; }
+.tipsy-arrow-n {
+  border-bottom-color: #000;
+}
+.tipsy-arrow-s {
+  border-top-color: #000;
+}
+.tipsy-arrow-e {
+  border-left-color: #000;
+}
+.tipsy-arrow-w {
+  border-right-color: #000;
+}
 
-.tipsy-ne { top: 0px; right: 0px; padding-top: calc(15px * var(--total-scale-factor, 1)); }
-.tipsy-nw { top: 0px; left: 0px; padding-top: calc(15px * var(--total-scale-factor, 1)); }
-.tipsy-se { bottom: 0px; right: 0px; padding-bottom: calc(15px * var(--total-scale-factor, 1)); }
-.tipsy-sw { bottom: 0px; left: 0px; padding-bottom: calc(15px * var(--total-scale-factor, 1)); }
+.tipsy-ne {
+  top: 0px;
+  right: 0px;
+  padding-top: calc(15px * var(--total-scale-factor, 1));
+}
+.tipsy-nw {
+  top: 0px;
+  left: 0px;
+  padding-top: calc(15px * var(--total-scale-factor, 1));
+}
+.tipsy-se {
+  bottom: 0px;
+  right: 0px;
+  padding-bottom: calc(15px * var(--total-scale-factor, 1));
+}
+.tipsy-sw {
+  bottom: 0px;
+  left: 0px;
+  padding-bottom: calc(15px * var(--total-scale-factor, 1));
+}
 
-.tipsy-nw .tipsy-arrow { top: calc(11px * var(--total-scale-factor, 1)); left: calc(15px * var(--total-scale-factor, 1)); border-bottom-style: solid; border-top: none; border-left-color: transparent; border-right-color: transparent;}
-.tipsy-ne .tipsy-arrow { top: calc(11px * var(--total-scale-factor, 1)); right: calc(15px * var(--total-scale-factor, 1)); border-bottom-style: solid; border-top: none;  border-left-color: transparent; border-right-color: transparent;}
-.tipsy-sw .tipsy-arrow { bottom: calc(11px * var(--total-scale-factor, 1)); left: calc(15px * var(--total-scale-factor, 1)); border-top-style: solid; border-bottom: none;  border-left-color: transparent; border-right-color: transparent; }
-.tipsy-se .tipsy-arrow { bottom: calc(11px * var(--total-scale-factor, 1)); right: calc(15px * var(--total-scale-factor, 1)); border-top-style: solid; border-bottom: none; border-left-color: transparent; border-right-color: transparent; }
+.tipsy-nw .tipsy-arrow {
+  top: calc(11px * var(--total-scale-factor, 1));
+  left: calc(15px * var(--total-scale-factor, 1));
+  border-bottom-style: solid;
+  border-top: none;
+  border-left-color: transparent;
+  border-right-color: transparent;
+}
+.tipsy-ne .tipsy-arrow {
+  top: calc(11px * var(--total-scale-factor, 1));
+  right: calc(15px * var(--total-scale-factor, 1));
+  border-bottom-style: solid;
+  border-top: none;
+  border-left-color: transparent;
+  border-right-color: transparent;
+}
+.tipsy-sw .tipsy-arrow {
+  bottom: calc(11px * var(--total-scale-factor, 1));
+  left: calc(15px * var(--total-scale-factor, 1));
+  border-top-style: solid;
+  border-bottom: none;
+  border-left-color: transparent;
+  border-right-color: transparent;
+}
+.tipsy-se .tipsy-arrow {
+  bottom: calc(11px * var(--total-scale-factor, 1));
+  right: calc(15px * var(--total-scale-factor, 1));
+  border-top-style: solid;
+  border-bottom: none;
+  border-left-color: transparent;
+  border-right-color: transparent;
+}
 
 .alice_main_title {
   font-size: calc(11px * var(--total-scale-factor, 1));

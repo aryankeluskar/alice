@@ -200,15 +200,21 @@ function fetchCitationInfo(pdfDocument) {
       }
 
       // First check if we have this citation in cached_final_refs
-      const cachedFinalRefs = JSON.parse(localStorage.getItem("cached_final_refs") || "{}");
+      const cachedFinalRefs = JSON.parse(
+        localStorage.getItem("cached_final_refs") || "{}"
+      );
       const citationKey = linkHref.split("cite.")[1]; // e.g. "keluskar2024ambiguity"
-      
+
       if (cachedFinalRefs[citationKey]) {
         console.log("Found cached final reference for citation:", citationKey);
         const cachedRef = cachedFinalRefs[citationKey];
-        
+
         // Create XML entry from cached data
-        const xmlDoc = document.implementation.createDocument("http://www.w3.org/2005/Atom", "entry", null);
+        const xmlDoc = document.implementation.createDocument(
+          "http://www.w3.org/2005/Atom",
+          "entry",
+          null
+        );
         const entry = xmlDoc.documentElement;
         entry.setAttribute("xmlns", "http://www.w3.org/2005/Atom");
 
@@ -246,10 +252,16 @@ function fetchCitationInfo(pdfDocument) {
         let tipsyDirection;
         try {
           const zoomMultiplier = currentScaleFactor || 1;
-          const leftPixels = parseFloat($(this).parent().css("left")) * zoomMultiplier;
-          const topPixels = parseFloat($(this).parent().css("top")) * zoomMultiplier;
-          const width = parseInt($(this).parent().parent().parent().css("width"));
-          const height = parseInt($(this).parent().parent().parent().css("height"));
+          const leftPixels =
+            parseFloat($(this).parent().css("left")) * zoomMultiplier;
+          const topPixels =
+            parseFloat($(this).parent().css("top")) * zoomMultiplier;
+          const width = parseInt(
+            $(this).parent().parent().parent().css("width")
+          );
+          const height = parseInt(
+            $(this).parent().parent().parent().css("height")
+          );
           const northSouth = topPixels > height / 2 ? "s" : "n";
           const eastWest = leftPixels > width / 2 ? "e" : "w";
           tipsyDirection = `${northSouth}${eastWest}`;
@@ -258,7 +270,10 @@ function fetchCitationInfo(pdfDocument) {
           tipsyDirection = "ne"; // Fallback direction
         }
 
-        console.log("Calculated tipsyDirection for cached popup:", tipsyDirection);
+        console.log(
+          "Calculated tipsyDirection for cached popup:",
+          tipsyDirection
+        );
 
         // Create and show popup with cached data
         createAndShowPopup({
@@ -272,7 +287,7 @@ function fetchCitationInfo(pdfDocument) {
             activePopup = $popup;
           },
         });
-        
+
         return;
       }
 
@@ -445,7 +460,7 @@ function fetchCitationInfo(pdfDocument) {
         // title/author combination might be ambiguous
         let arxivEndpoint;
         if (title && author) {
-          arxivEndpoint = `http://export.arxiv.org/api/query?search_query=ti:${title}+AND+au:${author}&start=0&max_results=50`;
+          arxivEndpoint = `https://export.arxiv.org/api/query?search_query=ti:${title}+AND+au:${author}&start=0&max_results=50`;
         } else if (title) {
           // For AI-extracted titles, we need to handle the search differently
           if (source === "AI extraction") {
@@ -465,12 +480,12 @@ function fetchCitationInfo(pdfDocument) {
 
             // Use all_fields search instead of just title for better matching
             // and properly encode the URL components
-            arxivEndpoint = `http://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(
+            arxivEndpoint = `https://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(
               keywords
             )}&start=0&max_results=50`;
           } else {
             // For BibTeX parsed titles, use the original strategy
-            arxivEndpoint = `http://export.arxiv.org/api/query?search_query=ti:${encodeURIComponent(
+            arxivEndpoint = `https://export.arxiv.org/api/query?search_query=ti:${encodeURIComponent(
               title
             )}&start=0&max_results=50`;
           }
@@ -843,16 +858,24 @@ function fetchCitationInfo(pdfDocument) {
         // Store the data in cached_final_refs
         const citationKey = linkHref.split("cite.")[1];
         if (citationKey) {
-          const cachedFinalRefs = JSON.parse(localStorage.getItem("cached_final_refs") || "{}");
+          const cachedFinalRefs = JSON.parse(
+            localStorage.getItem("cached_final_refs") || "{}"
+          );
           cachedFinalRefs[citationKey] = {
             title: fullTitle,
             abstract: abstract,
             authors: rawAuthors.join(", "),
             year: new Date(date).getFullYear(),
-            link: link
+            link: link,
           };
-          localStorage.setItem("cached_final_refs", JSON.stringify(cachedFinalRefs));
-          console.log("Stored paper data in cached_final_refs for citation:", citationKey);
+          localStorage.setItem(
+            "cached_final_refs",
+            JSON.stringify(cachedFinalRefs)
+          );
+          console.log(
+            "Stored paper data in cached_final_refs for citation:",
+            citationKey
+          );
         }
 
         // Check if we have a valid ArXiv link

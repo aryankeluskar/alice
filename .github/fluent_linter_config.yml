@@ -7,23 +7,23 @@
 
 ---
 ID01:
-    enabled: true
-    exclusions:
-        messages: []
-        files: []
+  enabled: true
+  exclusions:
+    messages: []
+    files: []
 ID02:
-    enabled: true
-    min_length: 9
-    exclusions:
-        messages: []
-        files: []
+  enabled: true
+  min_length: 9
+  exclusions:
+    messages: []
+    files: []
 CO01:
-    enabled: true
-    brands:
-        - Firefox
-        - Mozilla
-    exclusions:
-        files: []
-        messages: []
+  enabled: true
+  brands:
+    - Firefox
+    - Mozilla
+  exclusions:
+    files: []
+    messages: []
 VC:
-    disabled: false
+  disabled: false

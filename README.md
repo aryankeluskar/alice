@@ -16,9 +16,9 @@ Alice is a Web Extension to supercharge your literature review, making research 
 
 ## How Does It Work?
 
-By integrating multiple APIs and aggregating data from multiple sources, Alice is your go-to tool for literature review and academic software development. 
+By integrating multiple APIs and aggregating data from multiple sources, Alice is your go-to tool for literature review and academic software development.
 
-Alice works by using [pdf.js](https://github.com/mozilla/pdf.js), which is a `JavaScript` platform for rendering PDFs. Alice every hover, fetches information about the cited paper, and opens a popup with the information so you don't have to navigate back-and-forth to the References section several hundred times. 
+Alice works by using [pdf.js](https://github.com/mozilla/pdf.js), which is a `JavaScript` platform for rendering PDFs. Alice every hover, fetches information about the cited paper, and opens a popup with the information so you don't have to navigate back-and-forth to the References section several hundred times.
 
 <!-- Alice uses the embedded links to get the title, year, and authors of the cited paper and uses the arXiv API to fetch relevant details to display (as seen in the images). -->
 <!-- We go a step further. By integrating `Gemini-2.0-Flash`, a State-of-the-Art model known for very fast inference and scientific knowledge, Alice can summarize the cited paper on the click of a single button. No hassles of 23 open tabs in the background and a cluttered clipboard. -->
@@ -31,9 +31,9 @@ This tool is extremely cost-effective. It takes less than 5 cents to generate th
 
 ## Inspiration
 
-Hobbyists, mewbies, and researchers in the field of technology spend more time reading research papers than ever before. The rapid growth and widespread adoption of GenAI technology has sparked greater public interest in the field on an academic level. As an undergraduate researcher and tech optimist, I love reading research papers. They shape our present lives and will continue to guide us to the future. However, academia was not accessible to all readers because of its hefty prerequisites. 
+Hobbyists, mewbies, and researchers in the field of technology spend more time reading research papers than ever before. The rapid growth and widespread adoption of GenAI technology has sparked greater public interest in the field on an academic level. As an undergraduate researcher and tech optimist, I love reading research papers. They shape our present lives and will continue to guide us to the future. However, academia was not accessible to all readers because of its hefty prerequisites.
 
-An average paper on arXiv **cites 30-50** other papers, that is 30-50 many concepts a reader may need to read through. Those new to research and those who read papers as a hobby face this barrier of entry, which could be demotivating and time-consuming. Currently, solutions include opening multiple tabs on your browser to have more context, but that is time-intensive and not optimal for your computing resources. With the advent of LLMs and AI tools, a lot of people use them to summarize key findings of a paper but that too requires one to navigate away from their paper and just makes the whole process inconvenient. 
+An average paper on arXiv **cites 30-50** other papers, that is 30-50 many concepts a reader may need to read through. Those new to research and those who read papers as a hobby face this barrier of entry, which could be demotivating and time-consuming. Currently, solutions include opening multiple tabs on your browser to have more context, but that is time-intensive and not optimal for your computing resources. With the advent of LLMs and AI tools, a lot of people use them to summarize key findings of a paper but that too requires one to navigate away from their paper and just makes the whole process inconvenient.
 
 ---
 

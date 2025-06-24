@@ -21,7 +21,7 @@ the worker code, and the `workerSrc` path shall be set to the latter file.
 ### Minification
 
 If you are configuring Webpack to output a minified build, please note that you
-*must* configure the minifier to keep original class/function names intact;
+_must_ configure the minifier to keep original class/function names intact;
 otherwise the build is not guaranteed to work correctly.
 
 ## Worker loading
