@@ -231,15 +231,69 @@ async function getGeminiFallbackReference(paperId, linkHref, currentElement) {
         error.message.includes("429")
       ) {
         alert(
-          "Semantic Scholar API rate limit reached. Please wait a moment and try again later."
+          "Semantic Scholar API is currently rate-limited. Alice will try to use cached data or alternative sources. This is temporary - please try again in a few minutes."
         );
+        
+        // Try to use cached reference data as fallback
+        const citationKey = linkHref.split("cite.")[1];
+        if (citationKey) {
+          const cachedFinalRefs = JSON.parse(
+            localStorage.getItem("cached_final_refs") || "{}"
+          );
+          const cachedRef = cachedFinalRefs[citationKey];
+          
+          if (cachedRef) {
+            console.log("Using cached reference data as fallback:", cachedRef);
+            
+            // Create a minimal XML entry from cached data
+            const xmlDoc = document.implementation.createDocument(
+              "http://www.w3.org/2005/Atom",
+              "entry",
+              null
+            );
+            const entry = xmlDoc.documentElement;
+            entry.setAttribute("xmlns", "http://www.w3.org/2005/Atom");
+            
+            // Add cached data to XML
+            const titleElement = xmlDoc.createElement("title");
+            titleElement.textContent = cachedRef.title || "Title not available";
+            entry.appendChild(titleElement);
+            
+            const summaryElement = xmlDoc.createElement("summary");
+            summaryElement.textContent = cachedRef.abstract || "Abstract not available";
+            entry.appendChild(summaryElement);
+            
+            const idElement = xmlDoc.createElement("id");
+            idElement.textContent = cachedRef.link || "#";
+            entry.appendChild(idElement);
+            
+            const publishedElement = xmlDoc.createElement("published");
+            publishedElement.textContent = `${cachedRef.year || "2023"}-01-01T00:00:00Z`;
+            entry.appendChild(publishedElement);
+            
+            // Add authors
+            if (cachedRef.authors) {
+              const authors = cachedRef.authors.split(", ");
+              authors.forEach(authorName => {
+                const authorElement = xmlDoc.createElement("author");
+                const nameElement = xmlDoc.createElement("name");
+                nameElement.textContent = authorName;
+                authorElement.appendChild(nameElement);
+                entry.appendChild(authorElement);
+              });
+            }
+            
+            return entry;
+          }
+        }
+        
+        fail(currentElement, "Semantic Scholar temporarily unavailable - please try again in a few minutes");
       } else {
         alert(
-          "We have hit a rate limit on the Semantic Scholar API. Please wait for a moment and try again later."
+          "Unable to fetch paper details. This may be due to network issues or the paper not being indexed."
         );
+        fail(currentElement, `Failed to fetch paper details: ${error.message}`);
       }
-
-      fail(currentElement, `Failed to fetch paper details: ${error.message}`);
     }
   } else {
     console.log("No matching reference found or missing paper ID");
