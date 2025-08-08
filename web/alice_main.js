@@ -4,11 +4,12 @@ import {
   fail,
   getGeminiFallbackReference,
   fetchDataForPaper,
-  getStyle,
   getBibtexReferenceFromInternalLink,
   parseBibtexReference,
   createAndShowPopup,
 } from "./alice_helper.js";
+
+import { popup_style } from "./alice_constants.js";
 
 const parser = new DOMParser();
 function fetchCitationInfo(pdfDocument) {
@@ -964,7 +965,7 @@ function fetchCitationInfo(pdfDocument) {
           // Create style element properly to comply with CSP
           const style = document.createElement("style");
           style.id = "arxiv-toggle-style";
-          style.textContent = getStyle();
+          style.textContent = popup_style;
           document.head.appendChild(style);
         }
 
