@@ -7,6 +7,9 @@
   <a href="https://dub.sh/alice.pdf?utm_source=readme">
     <img src="https://img.shields.io/chrome-web-store/v/pbcobohpehjbogheaejoppcjdpbjnmif?style=flat-square&color=purple" alt="Chrome Web Store">
   </a>
+   <a href="https://x.com/intent/user?screen_name=aryankeluscar">
+    <img src="https://img.shields.io/twitter/follow/Aryan?link=https%3A%2F%2Fx.com%2Fintent%2Fuser%3Fscreen_name%3Daryankeluscar" alt="Follow Aryan on X">
+  </a>
 </div>
 
 Alice is a Web Extension to supercharge your literature review, making research accessible to all. Just hover on a citation and get all the information you need. Install now from the [chrome webstore](https://dub.sh/alice.pdf?utm_source=readme)!
