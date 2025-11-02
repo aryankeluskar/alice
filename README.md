@@ -7,8 +7,8 @@
   <a href="https://dub.sh/alice.pdf?utm_source=readme">
     <img src="https://img.shields.io/chrome-web-store/v/pbcobohpehjbogheaejoppcjdpbjnmif?style=flat-square&color=purple" alt="Chrome Web Store">
   </a>
-   <a href="https://x.com/intent/user?screen_name=aryankeluscar">
-    <img src="https://img.shields.io/twitter/follow/Aryan?link=https%3A%2F%2Fx.com%2Fintent%2Fuser%3Fscreen_name%3Daryankeluscar" alt="Follow Aryan on X">
+   <a href="https://x.com/intent/user?screen_name=soydotrun">
+    <img src="https://img.shields.io/twitter/follow/Aryan?link=https%3A%2F%2Fx.com%2Fintent%2Fuser%3Fscreen_name%3Dsoydotrun" alt="Follow Aryan on X">
   </a>
 </div>
 
@@ -40,4 +40,4 @@ An average paper on arXiv **cites 30-50** other papers, that is 30-50 many conce
 
 ---
 
-Built by [Aryan Keluskar](https://www.aryankeluskar.com/) :) Consider leaving a 🌟 if this adds value, and all feedback is very welcome. Feel free to message me [on twitter](https://x.com/aryankeluscar).
+Built by [Aryan Keluskar](https://www.aryankeluskar.com/) :) Consider leaving a 🌟 if this adds value, and all feedback is very welcome. Feel free to message me [on twitter](https://x.com/soydotrun).
