@@ -301,6 +301,21 @@ export const popup_style = `
 `;
 
 // ===== HTML Templates =====
+export function TEMPLATE_LOADING_POPUP({ popupId, tipsyDirection }) {
+  return `
+    <div id="${popupId}" class="tipsy tipsy-${tipsyDirection}" style="font-family: 'Solway', serif;">
+      <div class="tipsy-arrow"></div>
+      <div class="tipsy-inner" style="font-family: 'Solway', serif; padding: calc(10px * var(--total-scale-factor, 1));">
+        <div class="loading-container">
+          <div class="loading-animation"></div>
+          <div class="loading-text" style="font-family: 'Solway', serif; color: black; margin-top: calc(10px * var(--space-scale-factor)); margin-bottom: calc(10px * var(--space-scale-factor));">
+            Loading citation data...
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
 export function TEMPLATE_POPUP({
   popupId,
   tipsyDirection,
@@ -515,5 +530,3 @@ export function PROMPT_CLAUDE_IMPLEMENTATION(paperDetails) {
   Your response should be comprehensive yet concise, focusing on practical implementation rather than theory.
   `;
 }
-
-

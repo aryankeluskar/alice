@@ -3,11 +3,11 @@
  * Handles arXiv API queries and XML processing for citations
  */
 
-import { getGeminiFallbackReference } from './reference-fallback.js';
-import { createAndShowPopup } from './popup.js';
-import { fail } from './data-models.js';
-import { buildArxivQuery } from './arxiv-query.js';
-import { findMatchingEntry } from './xml-matcher.js';
+import { getGeminiFallbackReference } from "./reference-fallback.js";
+import { createAndShowPopup, createAndShowLoadingPopup } from "./popup.js";
+import { fail } from "./data-models.js";
+import { buildArxivQuery } from "./arxiv-query.js";
+import { findMatchingEntry } from "./xml-matcher.js";
 
 const parser = new DOMParser();
 
@@ -28,10 +28,7 @@ export async function processAndQueryArXiv(
   const queryData = buildArxivQuery(titleInfo, source);
 
   if (!queryData) {
-    fail(
-      currentElement,
-      `Failed to extract title information from ${source}`
-    );
+    fail(currentElement, `Failed to extract title information from ${source}`);
     return;
   }
 
@@ -41,6 +38,70 @@ export async function processAndQueryArXiv(
   console.log("author", author);
   console.log("year", year);
 
+  // Check if we're in a Chrome extension context where CORS will block arXiv API
+  const isExtensionContext = window.location.protocol === "chrome-extension:";
+
+  if (isExtensionContext) {
+    // Skip arXiv API entirely in extension context due to CORS, go directly to fallback
+    console.log(
+      "Chrome extension context detected, skipping arXiv API and using Semantic Scholar fallback"
+    );
+
+    // Show loading popup immediately for better UX
+    const loadingPopup = createAndShowLoadingPopup({
+      element: currentElement,
+      popupId,
+      tipsyDirection,
+      currentScaleFactor,
+      onPopupCreated,
+    });
+
+    if (!loadingPopup) {
+      // User stopped hovering
+      return;
+    }
+
+    try {
+      const result = await getGeminiFallbackReference(
+        paperId,
+        linkHref,
+        currentElement
+      );
+
+      // Remove loading popup
+      if (loadingPopup) {
+        loadingPopup.remove();
+      }
+
+      if (result) {
+        await createAndShowPopup({
+          element: currentElement,
+          popupId,
+          tipsyDirection,
+          matchingEntry: result,
+          currentScaleFactor,
+          onPopupCreated,
+        });
+      } else {
+        fail(
+          currentElement,
+          "Semantic Scholar fallback failed to find reference"
+        );
+      }
+    } catch (error) {
+      console.error("Error in Semantic Scholar fallback:", error);
+
+      // Remove loading popup on error
+      if (loadingPopup) {
+        loadingPopup.remove();
+      }
+
+      fail(currentElement, `Fallback failed: ${error.message}`);
+    }
+    return;
+  }
+
+  // Normal arXiv API flow for non-extension contexts
   const httpRequest = new XMLHttpRequest();
   if (!httpRequest) {
     fail(currentElement, "Failed to create XMLHttpRequest");
@@ -74,7 +135,11 @@ export async function processAndQueryArXiv(
       "ArXiv API request timed out after 1000ms, falling back to Semantic Scholar"
     );
     try {
-      const result = await getGeminiFallbackReference(paperId, linkHref, currentElement);
+      const result = await getGeminiFallbackReference(
+        paperId,
+        linkHref,
+        currentElement
+      );
       if (result) {
         await createAndShowPopup({
           element: currentElement,
@@ -146,10 +211,7 @@ async function onLoadEnd(
     return;
   }
 
-  const xmlResponse = parser.parseFromString(
-    request.response,
-    "text/xml"
-  );
+  const xmlResponse = parser.parseFromString(request.response, "text/xml");
   console.log("xmlResponse", xmlResponse);
 
   let found = false;
@@ -161,11 +223,7 @@ async function onLoadEnd(
   }
 
   if (!found) {
-    const result = await getGeminiFallbackReference(
-      paperId,
-      linkHref,
-      this
-    );
+    const result = await getGeminiFallbackReference(paperId, linkHref, this);
     if (result) {
       await createAndShowPopup({
         element: this,
@@ -191,11 +249,7 @@ async function onLoadEnd(
   );
 
   if (!matchingEntry) {
-    const result = await getGeminiFallbackReference(
-      paperId,
-      linkHref,
-      this
-    );
+    const result = await getGeminiFallbackReference(paperId, linkHref, this);
     if (result) {
       await createAndShowPopup({
         element: this,
@@ -249,10 +303,7 @@ async function onLoadEnd(
       year: new Date(date).getFullYear(),
       link: link,
     };
-    localStorage.setItem(
-      "cached_final_refs",
-      JSON.stringify(cachedFinalRefs)
-    );
+    localStorage.setItem("cached_final_refs", JSON.stringify(cachedFinalRefs));
     console.log(
       "Stored paper data in cached_final_refs for citation:",
       citationKey

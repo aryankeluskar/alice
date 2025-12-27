@@ -2,8 +2,101 @@
  * Popup creation and management for citation hover displays
  */
 
-import { popup_style, TEMPLATE_POPUP } from '../alice_constants.js';
-import { setupButtonEventListeners } from './popup-buttons.js';
+import {
+  popup_style,
+  TEMPLATE_POPUP,
+  TEMPLATE_LOADING_POPUP,
+} from "../alice_constants.js";
+import { setupButtonEventListeners } from "./popup-buttons.js";
+
+// Function to create and show a loading popup immediately
+export function createAndShowLoadingPopup({
+  element,
+  popupId,
+  tipsyDirection,
+  currentScaleFactor = 1,
+  onPopupCreated = null,
+}) {
+  // check if user is still hovering before adding to DOM
+  if ($(element).parent().find("a:hover").length === 0) {
+    return null;
+  }
+
+  // Add CSS for loading animation if not already in the document
+  if (!$("#arxiv-toggle-style").length) {
+    const style = document.createElement("style");
+    style.id = "arxiv-toggle-style";
+    style.textContent = popup_style;
+    document.head.appendChild(style);
+  }
+
+  // Add Solway font import if not already in the document
+  if (!$('link[href*="Solway"]').length) {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href =
+      "https://fonts.googleapis.com/css2?family=Solway:wght@400;500;700&display=swap";
+    document.head.appendChild(link);
+  }
+
+  // Create the loading popup HTML
+  const htmlString = TEMPLATE_LOADING_POPUP({ popupId, tipsyDirection });
+
+  // Add the popup to the page - MUST append to element's parent, not body!
+  // This is critical for proper positioning with tipsy CSS
+  const $popup = $(htmlString);
+  $(element).parent().append($popup);
+
+  // The tipsy CSS handles positioning automatically via direction classes (ne/nw/se/sw)
+  // No manual CSS positioning needed - the .tipsy-{direction} classes handle it
+
+  // Add hover tracking to prevent popup from closing while user hovers over it
+  let isMouseOverPopup = false;
+  let isMouseOverLink = false;
+
+  $popup.on({
+    mouseenter: function () {
+      isMouseOverPopup = true;
+    },
+    mouseleave: function () {
+      isMouseOverPopup = false;
+      checkShouldCloseLoadingPopup();
+    },
+    click: function (e) {
+      // Prevent clicks on the popup from closing it
+      e.stopPropagation();
+    },
+  });
+
+  $(element).on({
+    mouseenter: function () {
+      isMouseOverLink = true;
+    },
+    mouseleave: function () {
+      isMouseOverLink = false;
+      setTimeout(() => {
+        checkShouldCloseLoadingPopup();
+      }, 100);
+    },
+  });
+
+  // Function to check if loading popup should close
+  function checkShouldCloseLoadingPopup() {
+    setTimeout(() => {
+      if (!isMouseOverPopup && !isMouseOverLink) {
+        $popup.remove();
+      }
+    }, 100);
+  }
+
+  // Call the callback if provided
+  if (onPopupCreated) {
+    onPopupCreated($popup);
+  }
+
+  console.log("Created loading popup with tipsy direction:", tipsyDirection);
+  return $popup;
+}
 
 // Function to create and show the popup with paper data
 export async function createAndShowPopup({

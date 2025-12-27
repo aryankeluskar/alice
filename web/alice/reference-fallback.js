@@ -2,53 +2,109 @@
  * Fallback reference resolution using Gemini and Semantic Scholar
  */
 
-import { queuedFetch } from './api.js';
-import { ArxivInfo, fail } from './data-models.js';
-import { buildFallbackReferencePrompt } from '../alice_constants.js';
+import { queuedFetch } from "./api.js";
+import { ArxivInfo, fail } from "./data-models.js";
+import { buildFallbackReferencePrompt } from "../alice_constants.js";
 
 // Get Gemini fallback reference when arXiv API fails
-export async function getGeminiFallbackReference(paperId, linkHref, currentElement) {
+export async function getGeminiFallbackReference(
+  paperId,
+  linkHref,
+  currentElement
+) {
   // check if user is still hovering before adding to DOM
   if ($(currentElement).parent().find("a:hover").length === 0) {
-    return;
+    return null;
   }
 
+  // Check if we have cached paper data
   const cachedPaperDataString = localStorage.getItem(`paper_data_${paperId}`);
-  const cachedReference = JSON.parse(cachedPaperDataString)["references"];
-  const fallback_prompt = buildFallbackReferencePrompt(linkHref, cachedReference);
+  if (!cachedPaperDataString) {
+    console.log(`No cached paper data found for paper ID: ${paperId}`);
+    fail(
+      currentElement,
+      "Paper data not indexed yet. Please wait for indexing to complete."
+    );
+    return null;
+  }
+
+  let cachedPaperData;
+  try {
+    cachedPaperData = JSON.parse(cachedPaperDataString);
+  } catch (error) {
+    console.error("Error parsing cached paper data:", error);
+    fail(currentElement, "Invalid cached paper data");
+    return null;
+  }
+
+  const cachedReference = cachedPaperData["references"];
+  if (
+    !cachedReference ||
+    !Array.isArray(cachedReference) ||
+    cachedReference.length === 0
+  ) {
+    console.log(`No references found in cached data for paper ID: ${paperId}`);
+    fail(currentElement, "No references available for this paper");
+    return null;
+  }
+
+  const fallback_prompt = buildFallbackReferencePrompt(
+    linkHref,
+    cachedReference
+  );
 
   // Call Gemini API
-  const response = await fetch("https://api.aryankeluskar.com/api/gemini", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts: [
-            {
-              text: fallback_prompt,
-            },
-          ],
-        },
-      ],
-    }),
-  });
+  let finalResponse;
+  try {
+    const response = await fetch("https://api.aryankeluskar.com/api/gemini", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text: fallback_prompt,
+              },
+            ],
+          },
+        ],
+      }),
+    });
 
-  let finalResponse = await response.json();
-  console.log("finalResponse", finalResponse);
+    if (!response.ok) {
+      throw new Error(`Gemini API returned status ${response.status}`);
+    }
 
-  let title = finalResponse.candidates[0].content.parts[0].text.trim();
+    finalResponse = await response.json();
+    console.log("finalResponse", finalResponse);
+  } catch (error) {
+    console.error("Error calling Gemini API:", error);
+    fail(currentElement, `Gemini API error: ${error.message}`);
+    return null;
+  }
 
-  console.log("title", title);
+  // Extract title from Gemini response
+  let title;
+  try {
+    title = finalResponse.candidates[0].content.parts[0].text.trim();
+    console.log("Gemini extracted title:", title);
+  } catch (error) {
+    console.error("Error extracting title from Gemini response:", error);
+    fail(currentElement, "Invalid Gemini response format");
+    return null;
+  }
 
   // Find matching reference
   let matchingReference = null;
   for (const reference of cachedReference) {
     if (
+      reference.citedPaper &&
+      reference.citedPaper.title &&
       reference.citedPaper.title.trim().toLowerCase() ===
-      title.trim().toLowerCase()
+        title.trim().toLowerCase()
     ) {
       console.log("found reference", reference);
       matchingReference = reference;
@@ -56,15 +112,28 @@ export async function getGeminiFallbackReference(paperId, linkHref, currentEleme
     }
   }
 
-  if (matchingReference && matchingReference.citedPaper.paperId) {
-    return await fetchSemanticScholarData(matchingReference, linkHref, currentElement);
+  if (
+    matchingReference &&
+    matchingReference.citedPaper &&
+    matchingReference.citedPaper.paperId
+  ) {
+    return await fetchSemanticScholarData(
+      matchingReference,
+      linkHref,
+      currentElement
+    );
   } else {
     console.log("No matching reference found or missing paper ID");
-    fail(currentElement, "No matching reference found");
+    fail(currentElement, "No matching reference found in cached data");
+    return null;
   }
 }
 
-async function fetchSemanticScholarData(matchingReference, linkHref, currentElement) {
+async function fetchSemanticScholarData(
+  matchingReference,
+  linkHref,
+  currentElement
+) {
   const semanticScholarId = matchingReference.citedPaper.paperId;
   try {
     // Fetch data from Semantic Scholar API with retry logic and proper headers
@@ -73,10 +142,11 @@ async function fetchSemanticScholarData(matchingReference, linkHref, currentElem
     // Add headers to make the request look more like a browser request
     const requestOptions = {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'application/json',
-        'Accept-Language': 'en-US,en;q=0.9',
-      }
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        Accept: "application/json",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
     };
 
     const response = await queuedFetch(apiUrl, requestOptions, 5); // Use queued fetch to prevent concurrent requests
@@ -137,10 +207,7 @@ async function fetchSemanticScholarData(matchingReference, linkHref, currentElem
   } catch (error) {
     console.error("Error fetching Semantic Scholar data:", error);
 
-    if (
-      error.message.includes("rate limit") ||
-      error.message.includes("429")
-    ) {
+    if (error.message.includes("rate limit") || error.message.includes("429")) {
       alert(
         "Semantic Scholar API is currently rate-limited. Alice will try to use cached data or alternative sources. This is temporary - please try again in a few minutes."
       );
@@ -247,7 +314,8 @@ async function getCachedReferenceXML(linkHref, currentElement) {
       entry.appendChild(titleElement);
 
       const summaryElement = xmlDoc.createElement("summary");
-      summaryElement.textContent = cachedRef.abstract || "Abstract not available";
+      summaryElement.textContent =
+        cachedRef.abstract || "Abstract not available";
       entry.appendChild(summaryElement);
 
       const idElement = xmlDoc.createElement("id");
@@ -274,5 +342,8 @@ async function getCachedReferenceXML(linkHref, currentElement) {
     }
   }
 
-  fail(currentElement, "Semantic Scholar temporarily unavailable - please try again in a few minutes");
+  fail(
+    currentElement,
+    "Semantic Scholar temporarily unavailable - please try again in a few minutes"
+  );
 }
