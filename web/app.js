@@ -84,7 +84,7 @@ import { PDFOutlineViewer } from "web-pdf_outline_viewer";
 import { PDFPresentationMode } from "web-pdf_presentation_mode";
 import { PDFPrintServiceFactory } from "web-print_service";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
-export { fetchCitationInfo } from './alice/fetch-citation-info.js';
+import { fetchCitationInfo } from './alice/fetch-citation-info.js';
 import { PDFScriptingManager } from "./pdf_scripting_manager.js";
 import { PDFSidebar } from "web-pdf_sidebar";
 import { PDFThumbnailViewer } from "web-pdf_thumbnail_viewer";
@@ -3077,4 +3077,4 @@ function beforeUnload(evt) {
   return false;
 }
 
-export { PDFViewerApplication };
+export { PDFViewerApplication, fetchCitationInfo };

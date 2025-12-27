@@ -145,19 +145,9 @@ export function setupEventHandlers(scaleHandler) {
           ". Fetching fresh data."
         );
 
-        // alert user that we are currently indexing this paper, will take a few seconds
-        alert(
-          "We are currently indexing this paper, please wait for 5-6 seconds. We will alert you when it's ready."
-        );
-
         // Fetch fresh data (extract title, then get Semantic Scholar info)
+        // This happens asynchronously, so we don't wait for it here
         fetchDataForPaper(paperId);
-
-        // if references are empty, then return
-        if (!cachedPaperData || cachedPaperData.references.length === 0) {
-          fail(this, "Paper not indexed by Alice");
-          return;
-        }
       }
 
       // Check if activePopup exists but is no longer in the DOM

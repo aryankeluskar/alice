@@ -120,6 +120,28 @@ async function onLoadEnd(
     request.status !== 200
   ) {
     const status = request ? request.status : "undefined request";
+    console.log(
+      `ArXiv API request failed with status ${status}, falling back to Semantic Scholar`
+    );
+
+    // Try Semantic Scholar fallback when ArXiv fails (including CORS errors)
+    try {
+      const result = await getGeminiFallbackReference(paperId, linkHref, this);
+      if (result) {
+        await createAndShowPopup({
+          element: this,
+          popupId,
+          tipsyDirection,
+          matchingEntry: result,
+          currentScaleFactor,
+          onPopupCreated,
+        });
+        return;
+      }
+    } catch (error) {
+      console.error("Error in fallback after request failure:", error);
+    }
+
     fail(this, `HTTP request failed with status ${status}`);
     return;
   }
