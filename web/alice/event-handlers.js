@@ -11,8 +11,7 @@ import { createAndShowPopup } from './popup.js';
 import { getCachedReference, createXMLFromCachedRef, calculatePopupDirection } from './cached-ref-handler.js';
 
 export function setupEventHandlers(scaleHandler) {
-  let activePopup = null;
-  let activeLink = null;
+  // Use scaleHandler as the single source of truth for active popup state
   let popupHoverTimeout = null;
 
   const currentScaleFactor = scaleHandler.getScaleFactor();
@@ -34,15 +33,14 @@ export function setupEventHandlers(scaleHandler) {
 
     // If we have an active popup and the click is outside the popup and its trigger link
     if (
-      activePopup &&
-      !$(e.target).closest(activePopup).length &&
-      (!activeLink || !$(e.target).closest($(activeLink)).length)
+      scaleHandler.activePopup &&
+      !$(e.target).closest(scaleHandler.activePopup).length &&
+      (!scaleHandler.activeLink || !$(e.target).closest($(scaleHandler.activeLink)).length)
     ) {
       // Remove the popup
-      activePopup.remove();
+      scaleHandler.activePopup.remove();
       // Reset active variables
-      activePopup = null;
-      activeLink = null;
+      scaleHandler.clearActivePopup();
     }
   });
 
@@ -90,9 +88,10 @@ export function setupEventHandlers(scaleHandler) {
           matchingEntry: entry,
           currentScaleFactor: scaleHandler.getScaleFactor(),
           onPopupCreated: $popup => {
-            activeLink = this;
-            activePopup = $popup;
             scaleHandler.setActivePopup($popup, this);
+          },
+          onPopupClosed: () => {
+            scaleHandler.clearActivePopup();
           },
         });
 
@@ -152,14 +151,13 @@ export function setupEventHandlers(scaleHandler) {
 
       // Check if activePopup exists but is no longer in the DOM
       if (
-        activePopup &&
-        !$.contains(document.documentElement, activePopup[0])
+        scaleHandler.activePopup &&
+        !$.contains(document.documentElement, scaleHandler.activePopup[0])
       ) {
         console.log(
           "Active popup no longer in DOM, resetting active variables"
         );
-        activePopup = null;
-        activeLink = null;
+        scaleHandler.clearActivePopup();
       }
 
       // Clear any existing hover timeout
@@ -170,12 +168,12 @@ export function setupEventHandlers(scaleHandler) {
 
       // If there's already an active popup and we're hovering a different link,
       // ignore this hover event
-      if (activePopup && activeLink !== this) {
+      if (scaleHandler.activePopup && scaleHandler.activeLink !== this) {
         return;
       }
 
       // If we already have an active popup for this link, don't create a new one
-      if (activePopup && activeLink === this) {
+      if (scaleHandler.activePopup && scaleHandler.activeLink === this) {
         return;
       }
 
@@ -211,9 +209,10 @@ export function setupEventHandlers(scaleHandler) {
               tipsyDirection,
               scaleHandler.getScaleFactor(),
               $popup => {
-                activeLink = currentElement;
-                activePopup = $popup;
                 scaleHandler.setActivePopup($popup, currentElement);
+              },
+              () => {
+                scaleHandler.clearActivePopup();
               }
             );
           } catch (error) {
@@ -238,9 +237,10 @@ export function setupEventHandlers(scaleHandler) {
                 currentScaleFactor: scaleHandler.getScaleFactor(),
                 onPopupCreated: $popup => {
                   // Store the current element and popup as active
-                  activeLink = this;
-                  activePopup = $popup;
                   scaleHandler.setActivePopup($popup, this);
+                },
+                onPopupClosed: () => {
+                  scaleHandler.clearActivePopup();
                 },
               });
               console.log("Created popup");
@@ -265,9 +265,10 @@ export function setupEventHandlers(scaleHandler) {
                 currentScaleFactor: scaleHandler.getScaleFactor(),
                 onPopupCreated: $popup => {
                   // Store the current element and popup as active
-                  activeLink = this;
-                  activePopup = $popup;
                   scaleHandler.setActivePopup($popup, this);
+                },
+                onPopupClosed: () => {
+                  scaleHandler.clearActivePopup();
                 },
               });
               console.log("Created popup");

@@ -21,7 +21,9 @@
     "https://arxiv.org/pdf/*",
     "https://www.arxiv.org/pdf/*",
     "https://biorxiv.org/content/*",
-    "https://www.biorxiv.org/content/*"
+    "https://www.biorxiv.org/content/*",
+    "https://api.semanticscholar.org/*",
+    "https://api.aryankeluskar.com/*"
   ],
   "content_scripts": [
     {

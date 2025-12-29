@@ -16,6 +16,7 @@ export function createAndShowLoadingPopup({
   tipsyDirection,
   currentScaleFactor = 1,
   onPopupCreated = null,
+  onPopupClosed = null,
 }) {
   // check if user is still hovering before adding to DOM
   if ($(element).parent().find("a:hover").length === 0) {
@@ -85,6 +86,10 @@ export function createAndShowLoadingPopup({
     setTimeout(() => {
       if (!isMouseOverPopup && !isMouseOverLink) {
         $popup.remove();
+        // Notify the parent that the popup has closed
+        if (onPopupClosed) {
+          onPopupClosed();
+        }
       }
     }, 100);
   }
@@ -106,6 +111,7 @@ export async function createAndShowPopup({
   matchingEntry,
   currentScaleFactor = 1,
   onPopupCreated = null,
+  onPopupClosed = null,
 }) {
   // check if user is still hovering before adding to DOM
   if ($(element).parent().find("a:hover").length === 0) {
@@ -299,6 +305,10 @@ export async function createAndShowPopup({
         $popup.remove();
         activePopup = null;
         activeLink = null;
+        // Notify the parent that the popup has closed
+        if (onPopupClosed) {
+          onPopupClosed();
+        }
       }
     }, 100);
   }
@@ -328,6 +338,10 @@ export async function createAndShowPopup({
       $popup.remove();
       activePopup = null;
       activeLink = null;
+      // Notify the parent that the popup has closed
+      if (onPopupClosed) {
+        onPopupClosed();
+      }
     },
   };
 }

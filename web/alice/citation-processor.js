@@ -21,7 +21,8 @@ export async function processAndQueryArXiv(
   popupId,
   tipsyDirection,
   currentScaleFactor,
-  onPopupCreated
+  onPopupCreated,
+  onPopupClosed
 ) {
   console.log(`Processing paper info from ${source}:`, titleInfo);
 
@@ -54,6 +55,7 @@ export async function processAndQueryArXiv(
       tipsyDirection,
       currentScaleFactor,
       onPopupCreated,
+      onPopupClosed,
     });
 
     if (!loadingPopup) {
@@ -81,6 +83,7 @@ export async function processAndQueryArXiv(
           matchingEntry: result,
           currentScaleFactor,
           onPopupCreated,
+          onPopupClosed,
         });
       } else {
         fail(
@@ -124,7 +127,8 @@ export async function processAndQueryArXiv(
       popupId,
       tipsyDirection,
       currentScaleFactor,
-      onPopupCreated
+      onPopupCreated,
+      onPopupClosed
     );
   };
 
@@ -148,6 +152,7 @@ export async function processAndQueryArXiv(
           matchingEntry: result,
           currentScaleFactor,
           onPopupCreated,
+          onPopupClosed,
         });
       }
     } catch (error) {
@@ -166,7 +171,8 @@ async function onLoadEnd(
   popupId,
   tipsyDirection,
   currentScaleFactor,
-  onPopupCreated
+  onPopupCreated,
+  onPopupClosed
 ) {
   // Add this check to prevent errors with undefined httpRequest
   if (!this.httpRequest && this !== window) {
@@ -200,6 +206,7 @@ async function onLoadEnd(
           matchingEntry: result,
           currentScaleFactor,
           onPopupCreated,
+          onPopupClosed,
         });
         return;
       }
@@ -232,6 +239,7 @@ async function onLoadEnd(
         matchingEntry: result,
         currentScaleFactor,
         onPopupCreated,
+        onPopupClosed,
       });
     }
     return;
@@ -245,7 +253,8 @@ async function onLoadEnd(
     popupId,
     tipsyDirection,
     currentScaleFactor,
-    onPopupCreated
+    onPopupCreated,
+    onPopupClosed
   );
 
   if (!matchingEntry) {
@@ -258,6 +267,7 @@ async function onLoadEnd(
         matchingEntry: result,
         currentScaleFactor,
         onPopupCreated,
+        onPopupClosed,
       });
     }
     fail(this, "No matching entries found for this reference");
@@ -318,6 +328,7 @@ async function onLoadEnd(
     matchingEntry,
     currentScaleFactor,
     onPopupCreated,
+    onPopupClosed,
   });
 
   console.log("Created popup");

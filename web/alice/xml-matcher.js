@@ -14,7 +14,8 @@ export async function findMatchingEntry(
   popupId,
   tipsyDirection,
   currentScaleFactor,
-  onPopupCreated
+  onPopupCreated,
+  onPopupClosed
 ) {
   let matchingEntry = null;
 
@@ -41,7 +42,8 @@ export async function findMatchingEntry(
         popupId,
         tipsyDirection,
         currentScaleFactor,
-        onPopupCreated
+        onPopupCreated,
+        onPopupClosed
       );
       break;
     } else if (title && !author) {
@@ -64,7 +66,8 @@ export async function findMatchingEntry(
         popupId,
         tipsyDirection,
         currentScaleFactor,
-        onPopupCreated
+        onPopupCreated,
+        onPopupClosed
       );
       if (matchingEntry === null) {
         // Error occurred, multiple matches found
@@ -85,7 +88,8 @@ async function findBestMatchByTitle(
   popupId,
   tipsyDirection,
   currentScaleFactor,
-  onPopupCreated
+  onPopupCreated,
+  onPopupClosed
 ) {
   // For the title extraction path, we need to manually check if the title is a good match
   console.log("Using AI-extracted title, checking for best match");
@@ -160,7 +164,8 @@ async function matchByBibtex(
   popupId,
   tipsyDirection,
   currentScaleFactor,
-  onPopupCreated
+  onPopupCreated,
+  onPopupClosed
 ) {
   if (
     entry.getElementsByTagName("published").length > 0 &&
@@ -192,6 +197,7 @@ async function matchByBibtex(
           matchingEntry: result,
           currentScaleFactor,
           onPopupCreated,
+          onPopupClosed,
         });
       }
       // multiple matches, bibtex is ambiguous
