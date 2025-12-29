@@ -5,7 +5,7 @@
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
-    "build": "gulp chromium"
+    "build": "gulp chromium && zip -r build.zip build/chromium/"
   },
   "devDependencies": {
     "@babel/core": "^7.26.9",

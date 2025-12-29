@@ -30,7 +30,7 @@ function isArxivOrBiorxivPdf() {
          /^https?:\/\/(www\.)?biorxiv\.org\/content\/.*\.pdf/.test(url);
 }
 
-if (document.contentType === "application/pdf" || isArxivOrBiorxivPdf()) {
+if (isArxivOrBiorxivPdf()) {
   chrome.runtime.sendMessage({ action: "canRequestBody" }, maybeRenderPdfDoc);
 }
 
