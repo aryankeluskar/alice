@@ -18,8 +18,14 @@ export function createAndShowLoadingPopup({
   onPopupCreated = null,
   onPopupClosed = null,
 }) {
+  console.log("[DEBUG] createAndShowLoadingPopup called with:", { popupId, tipsyDirection });
+  
   // check if user is still hovering before adding to DOM
-  if ($(element).parent().find("a:hover").length === 0) {
+  const hoverCheck = $(element).parent().find("a:hover").length;
+  console.log("[DEBUG] Hover check result:", hoverCheck);
+  
+  if (hoverCheck === 0) {
+    console.log("[DEBUG] User not hovering, aborting loading popup creation");
     return null;
   }
 
@@ -96,10 +102,11 @@ export function createAndShowLoadingPopup({
 
   // Call the callback if provided
   if (onPopupCreated) {
+    console.log("[DEBUG] Calling onPopupCreated callback for loading popup");
     onPopupCreated($popup);
   }
 
-  console.log("Created loading popup with tipsy direction:", tipsyDirection);
+  console.log("[DEBUG] Successfully created loading popup with tipsy direction:", tipsyDirection);
   return $popup;
 }
 
@@ -113,8 +120,14 @@ export async function createAndShowPopup({
   onPopupCreated = null,
   onPopupClosed = null,
 }) {
+  console.log("[DEBUG] createAndShowPopup called with:", { popupId, tipsyDirection });
+  
   // check if user is still hovering before adding to DOM
-  if ($(element).parent().find("a:hover").length === 0) {
+  const hoverCheck = $(element).parent().find("a:hover").length;
+  console.log("[DEBUG] Hover check result:", hoverCheck);
+  
+  if (hoverCheck === 0) {
+    console.log("[DEBUG] User not hovering, aborting popup creation");
     return;
   }
 

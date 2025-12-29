@@ -22,5 +22,7 @@ importScripts(
   "pdfHandler.js",
   "extension-router.js",
   "suppress-update.js",
-  "telemetry.js"
+  "telemetry.js",
+  "claude-api-handler.js",
+  "semantic-scholar-handler.js"
 );

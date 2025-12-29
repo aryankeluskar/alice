@@ -24,7 +24,8 @@ export async function processAndQueryArXiv(
   onPopupCreated,
   onPopupClosed
 ) {
-  console.log(`Processing paper info from ${source}:`, titleInfo);
+  console.log(`[DEBUG] processAndQueryArXiv called from ${source}:`, titleInfo);
+  console.log("[DEBUG] Parameters:", { paperId, linkHref, popupId, tipsyDirection });
 
   const queryData = buildArxivQuery(titleInfo, source);
 
@@ -45,10 +46,11 @@ export async function processAndQueryArXiv(
   if (isExtensionContext) {
     // Skip arXiv API entirely in extension context due to CORS, go directly to fallback
     console.log(
-      "Chrome extension context detected, skipping arXiv API and using Semantic Scholar fallback"
+      "[DEBUG] Chrome extension context detected, skipping arXiv API and using Semantic Scholar fallback"
     );
 
     // Show loading popup immediately for better UX
+    console.log("[DEBUG] Creating loading popup...");
     const loadingPopup = createAndShowLoadingPopup({
       element: currentElement,
       popupId,
@@ -70,9 +72,13 @@ export async function processAndQueryArXiv(
         currentElement
       );
 
-      // Remove loading popup
+      // Remove loading popup and clear state
       if (loadingPopup) {
         loadingPopup.remove();
+        // Clear the active popup state since we're manually removing it
+        if (onPopupClosed) {
+          onPopupClosed();
+        }
       }
 
       if (result) {
@@ -94,9 +100,13 @@ export async function processAndQueryArXiv(
     } catch (error) {
       console.error("Error in Semantic Scholar fallback:", error);
 
-      // Remove loading popup on error
+      // Remove loading popup on error and clear state
       if (loadingPopup) {
         loadingPopup.remove();
+        // Clear the active popup state since we're manually removing it
+        if (onPopupClosed) {
+          onPopupClosed();
+        }
       }
 
       fail(currentElement, `Fallback failed: ${error.message}`);

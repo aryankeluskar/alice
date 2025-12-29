@@ -4,6 +4,67 @@
 
 import { delay, getCachedResponse, setCachedResponse, apiRequestQueue, processQueue } from './cache.js';
 
+// Helper function to make API calls through background script (bypasses CORS in extension context)
+async function fetchViaBackgroundScript(url, options = {}) {
+  console.log("[DEBUG] Attempting to fetch via background script:", url);
+  
+  // Check if we're actually in an extension context
+  if (!chrome || !chrome.runtime || !chrome.runtime.sendMessage) {
+    console.log("[DEBUG] Not in extension context or no runtime available");
+    throw new Error("Not in extension context");
+  }
+  
+  return new Promise((resolve, reject) => {
+    try {
+      chrome.runtime.sendMessage(
+        {
+          action: "callSemanticScholarAPI",
+          data: { url, options }
+        },
+        response => {
+          console.log("[DEBUG] Background script response:", response);
+          console.log("[DEBUG] chrome.runtime.lastError:", chrome.runtime.lastError);
+          
+          if (chrome.runtime.lastError) {
+            console.error("[DEBUG] Background script error:", chrome.runtime.lastError.message);
+            reject(new Error(chrome.runtime.lastError.message));
+            return;
+          }
+
+          if (!response) {
+            console.error("[DEBUG] No response from background script");
+            reject(new Error("No response from background script"));
+            return;
+          }
+
+          if (response.success) {
+            console.log("[DEBUG] Successfully received data from background script");
+            // Create a response-like object to maintain API compatibility
+            const dataStr = JSON.stringify(response.data);
+            const mockResponse = {
+              ok: true,
+              status: 200,
+              json: async () => response.data,
+              text: async () => dataStr,
+              clone: () => mockResponse, // Add clone method for caching
+              headers: new Headers({ 'content-type': 'application/json' }),
+              url: url,
+              statusText: 'OK'
+            };
+            resolve(mockResponse);
+          } else {
+            console.error("[DEBUG] Background script returned error:", response.error);
+            reject(new Error(response.error));
+          }
+        }
+      );
+    } catch (error) {
+      console.error("[DEBUG] Error sending message to background:", error);
+      reject(error);
+    }
+  });
+}
+
 // Retry function with exponential backoff
 export async function fetchWithRetry(url, options = {}, maxRetries = 3) {
   let retries = 0;
@@ -19,17 +80,35 @@ export async function fetchWithRetry(url, options = {}, maxRetries = 3) {
     console.log(`Converted ArXiv API URL to HTTPS: ${url}`);
   }
 
+  // Check if we're in an extension context and calling Semantic Scholar
+  const isExtensionContext = typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage;
+  const isSemanticScholarAPI = url.includes('semanticscholar.org');
+
   while (retries < maxRetries) {
     try {
       console.log(`Fetching ${url} (attempt ${retries + 1}/${maxRetries})`);
-      const response = await fetch(url, options);
+      
+      // Use background script for Semantic Scholar calls in extension context
+      // But fall back to direct fetch if background script fails
+      let response;
+      if (isExtensionContext && isSemanticScholarAPI) {
+        try {
+          response = await fetchViaBackgroundScript(url, options);
+        } catch (bgError) {
+          console.warn("[DEBUG] Background script failed, trying direct fetch:", bgError.message);
+          response = await fetch(url, options);
+        }
+      } else {
+        response = await fetch(url, options);
+      }
 
       // If it's a rate limit error, retry with exponential backoff
       if (response.status === 429) {
         const isSemanticScholar = url.includes('semanticscholar.org');
 
         if (retries === 0 && isSemanticScholar) {
-          alert("Alice has hit the Semantic Scholar API rate limit. Please wait while we retry...");
+          console.warn("⚠️ Semantic Scholar API rate limit hit. Retrying automatically...");
+          // Don't show alert - just log and retry automatically
         }
 
         let waitTime;

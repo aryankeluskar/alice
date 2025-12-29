@@ -23,6 +23,9 @@ export function setupEventHandlers(scaleHandler) {
   // current implementation calls this upon every viewer render,
   // so turn off callback before adding another one
   $("a").off();
+  
+  // Also remove any existing delegated handlers to prevent duplicates
+  $(document).off("mouseenter", "a");
 
   // Add a click event on the document to close popups when clicking outside
   $(document).on("click", function (e) {
@@ -44,14 +47,22 @@ export function setupEventHandlers(scaleHandler) {
     }
   });
 
-  $("a").on({
-    mouseenter: async function () {
-      console.log("-" * 30);
-      console.log("Finding paper data for:", $(this).attr("href"));
-      console.log("-" * 30);
+  // Count current links for debugging
+  const currentLinkCount = $("a").length;
+  const citationLinkCount = $('a[href*="cite"]').length;
+  console.log("[DEBUG] Setting up mouseenter handlers. Total links:", currentLinkCount, "Citation links:", citationLinkCount);
+  
+  // Use event delegation on the document to catch dynamically added links
+  // This ensures handlers work even for links that are added after initialization
+  $(document).on("mouseenter", "a", async function () {
+      console.log("[DEBUG] ========== MOUSEENTER FIRED ==========");
+      console.log("[DEBUG] Link href:", $(this).attr("href"));
+      console.log("[DEBUG] Current activePopup:", scaleHandler.activePopup);
+      console.log("[DEBUG] Current activeLink:", scaleHandler.activeLink);
 
       // Create a unique ID for this popup to avoid selector conflicts
       const popupId = `popup-${Math.random().toString(36).substr(2, 9)}`;
+      console.log("[DEBUG] Generated popupId:", popupId);
 
       // Extract paper ID from current URL
       const currentUrl = window.location.href;
@@ -60,14 +71,17 @@ export function setupEventHandlers(scaleHandler) {
       // if "cite" not in href, ignore
       const linkHref = $(this).attr("href");
       if (!linkHref.includes("cite")) {
+        console.log("[DEBUG] Link does not contain 'cite', ignoring");
         return;
       }
+      console.log("[DEBUG] Processing citation link:", linkHref);
 
       // First check if we have this citation in cached_final_refs
       const { cachedRef, citationKey } = getCachedReference(linkHref);
+      console.log("[DEBUG] Cached reference check:", { citationKey, hasCachedRef: !!cachedRef });
 
       if (cachedRef) {
-        console.log("Found cached final reference for citation:", citationKey);
+        console.log("[DEBUG] Found cached final reference for citation:", citationKey);
 
         // Create XML entry from cached data
         const entry = createXMLFromCachedRef(cachedRef);
@@ -110,11 +124,11 @@ export function setupEventHandlers(scaleHandler) {
       }
 
       if (!paperId) {
-        console.error("Could not extract paper ID from URL:", currentUrl);
+        console.error("[DEBUG] Could not extract paper ID from URL:", currentUrl);
         return; // Stop processing if no paper ID
       }
 
-      console.log("Extracted paper ID:", paperId);
+      console.log("[DEBUG] Extracted paper ID:", paperId);
 
       // Check if we already have data for this paper ID in localStorage
       const cachedPaperDataString = localStorage.getItem(
@@ -155,7 +169,7 @@ export function setupEventHandlers(scaleHandler) {
         !$.contains(document.documentElement, scaleHandler.activePopup[0])
       ) {
         console.log(
-          "Active popup no longer in DOM, resetting active variables"
+          "[DEBUG] Active popup no longer in DOM, resetting active variables"
         );
         scaleHandler.clearActivePopup();
       }
@@ -169,13 +183,17 @@ export function setupEventHandlers(scaleHandler) {
       // If there's already an active popup and we're hovering a different link,
       // ignore this hover event
       if (scaleHandler.activePopup && scaleHandler.activeLink !== this) {
+        console.log("[DEBUG] BLOCKING: Different link already has active popup");
         return;
       }
 
       // If we already have an active popup for this link, don't create a new one
       if (scaleHandler.activePopup && scaleHandler.activeLink === this) {
+        console.log("[DEBUG] BLOCKING: This link already has active popup");
         return;
       }
+
+      console.log("[DEBUG] Passed all blocking checks, proceeding...");
 
       // get location relative to page for nicer display
       const tipsyDirection = calculatePopupDirection(this, scaleHandler.getScaleFactor());
@@ -183,9 +201,10 @@ export function setupEventHandlers(scaleHandler) {
       console.log("tipsyDirection", tipsyDirection);
 
       const bibtexRef = getBibtexReferenceFromInternalLink(linkHref);
+      console.log("[DEBUG] bibtexRef:", bibtexRef);
+      
       const surroundingText = $(this).parent().text().trim();
-
-      console.log("surroundingText", surroundingText);
+      console.log("[DEBUG] surroundingText:", surroundingText);
 
       // Store the current element for context and binding
       const currentElement = this;
@@ -193,10 +212,13 @@ export function setupEventHandlers(scaleHandler) {
       let matchingEntry = null;
 
       const parsedInfo = parseBibtexReference(bibtexRef);
+      console.log("[DEBUG] parsedInfo:", parsedInfo);
 
       // Make this an immediately invoked async function to allow using await
       (async () => {
+        console.log("[DEBUG] Entering async processing block");
         if (parsedInfo) {
+          console.log("[DEBUG] Taking BibTeX parsing path");
           // Try ArXiv API first - properly handle the Promise
           try {
             await processAndQueryArXiv(
@@ -247,6 +269,7 @@ export function setupEventHandlers(scaleHandler) {
             }
           }
         } else {
+          console.log("[DEBUG] Taking AI-powered fallback path");
           // AI-powered fallback path
           try {
             let result = await getGeminiFallbackReference(
@@ -279,6 +302,5 @@ export function setupEventHandlers(scaleHandler) {
           }
         }
       })();
-    },
-  });
+    });
 }
