@@ -1,0 +1,11 @@
+# Build outputs
+*.zip
+*.xpi
+
+# macOS
+.DS_Store
+__MACOSX/
+
+# Logs
+*.log
+

@@ -1,0 +1,76 @@
+{
+  "manifest_version": 3,
+  "name": "Alice",
+  "version": "1.15.100",
+  "description": "Alice is a Browser Extension to supercharge your literature review, making research accessible to all.",
+  "icons": {
+    "128": "icon128.png",
+    "48": "icon48.png",
+    "16": "icon16.png"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "alice@aryankeluskar.com",
+      "strict_min_version": "142.0",
+      "data_collection_permissions": {
+        "required": ["none"],
+        "optional": []
+      }
+    }
+  },
+  "permissions": [
+    "alarms",
+    "webRequest",
+    "tabs",
+    "webNavigation",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://arxiv.org/pdf/*",
+    "https://www.arxiv.org/pdf/*",
+    "https://biorxiv.org/content/*",
+    "https://www.biorxiv.org/content/*",
+    "https://api.semanticscholar.org/*",
+    "https://api.aryankeluskar.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://arxiv.org/pdf/*",
+        "https://www.arxiv.org/pdf/*",
+        "https://biorxiv.org/content/*",
+        "https://www.biorxiv.org/content/*"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "css": ["contentstyle.css"],
+      "js": ["contentscript.js"]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
+  "storage": {
+    "managed_schema": "preferences_schema.json"
+  },
+  "options_ui": {
+    "page": "options/options.html"
+  },
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "content/web/viewer.html",
+        "content/web/jquery-3.6.0.min.js"
+      ],
+      "matches": [
+        "*://arxiv.org/*",
+        "*://biorxiv.org/*",
+        "*://www.biorxiv.org/*",
+        "*://www.arxiv.org/*"
+      ]
+    }
+  ]
+}
