@@ -73,6 +73,24 @@ async function registerPdfRedirectRule() {
   // The required "id" fields will be auto-generated later.
   const addRules = [
     {
+      // Do not redirect arXiv PDF URLs - let content script handle them
+      // to preserve the original URL in the address bar.
+      condition: {
+        regexFilter: "^https?://(www\\.)?arxiv\\.org/pdf/.*$",
+        resourceTypes: ["main_frame", "sub_frame"],
+      },
+      action: ACTION_IGNORE_OTHER_RULES,
+    },
+    {
+      // Do not redirect bioRxiv PDF URLs - let content script handle them
+      // to preserve the original URL in the address bar.
+      condition: {
+        regexFilter: "^https?://(www\\.)?biorxiv\\.org/content/.*\\.pdf.*$",
+        resourceTypes: ["main_frame", "sub_frame"],
+      },
+      action: ACTION_IGNORE_OTHER_RULES,
+    },
+    {
       // Do not redirect for URLs containing pdfjs.action=download.
       condition: {
         urlFilter: "pdfjs.action=download",
