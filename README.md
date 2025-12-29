@@ -24,13 +24,13 @@ By integrating multiple APIs and aggregating data from multiple sources, Alice i
 Alice works by using [pdf.js](https://github.com/mozilla/pdf.js), which is a `JavaScript` platform for rendering PDFs. Alice every hover, fetches information about the cited paper, and opens a popup with the information so you don't have to navigate back-and-forth to the References section several hundred times.
 
 <!-- Alice uses the embedded links to get the title, year, and authors of the cited paper and uses the arXiv API to fetch relevant details to display (as seen in the images). -->
-<!-- We go a step further. By integrating `Llama-3.3-70b` via Groq, a State-of-the-Art model known for very fast inference and scientific knowledge, Alice can summarize the cited paper on the click of a single button. No hassles of 23 open tabs in the background and a cluttered clipboard. -->
+<!-- We go a step further. By integrating `Gemini-2.0-Flash`, a State-of-the-Art model known for very fast inference and scientific knowledge, Alice can summarize the cited paper on the click of a single button. No hassles of 23 open tabs in the background and a cluttered clipboard. -->
 
 (Coming Soon!) Research Papers also have a lot of code. There's a website dedicated to this, called [https://paperswithcode.com/](https://paperswithcode.com/) This website exists to democratize the implementation of these research papers as code that you can use in your software. Alice automates this for you as well! By using the arXiv API, we prompt-engineered the Claude Sonnet models to thoroughly go through the cited paper and generate instructions for your code. It generates an embeddable link with all context necessary to replicate the paper's results. You can simply take the link, paste it into your favorite AI-code-editor and it will do the magic for you.
 
 ## Cost Optimizations
 
-This tool is extremely cost-effective. It takes less than 5 cents to generate the code for a given paper, and the summarization uses Groq's efficient inference. There is no cost of servers or database. With just a few dollars in sponsorship, Alice can operate for years and serve thousands of users without ever charging them a penny. This tool takes less than 1 minute to install and is instantly available when you open a research paper.
+This tool is extremely cost-effective. It takes less than 5 cents to generate the code for a given paper, and completely free for summarization since it is supported by Google Gemini. There is no cost of servers or database. With just a few dollars in sponsorship, Alice can operate for years and serve thousands of users without ever charging them a penny. This tool takes less than 1 minute to install and is instantly available when you open a reserach paper.
 
 ## Inspiration
 

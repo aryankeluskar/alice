@@ -3,7 +3,7 @@
  */
 
 import { fail } from './data-models.js';
-import { getGroqFallbackReference } from './reference-fallback.js';
+import { getGeminiFallbackReference } from './reference-fallback.js';
 import { fetchDataForPaper } from './paper-data.js';
 import { getBibtexReferenceFromInternalLink, parseBibtexReference } from './utils.js';
 import { processAndQueryArXiv } from './citation-processor.js';
@@ -222,7 +222,7 @@ export function setupEventHandlers(scaleHandler) {
             );
             // log the error
             console.error("Error in ArXiv API:", error);
-            let result = await getGroqFallbackReference(
+            let result = await getGeminiFallbackReference(
               paperId,
               linkHref,
               currentElement
@@ -249,7 +249,7 @@ export function setupEventHandlers(scaleHandler) {
         } else {
           // AI-powered fallback path
           try {
-            let result = await getGroqFallbackReference(
+            let result = await getGeminiFallbackReference(
               paperId,
               linkHref,
               currentElement

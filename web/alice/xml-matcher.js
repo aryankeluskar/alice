@@ -2,7 +2,7 @@
  * XML entry matching logic for arXiv search results
  */
 
-import { getGroqFallbackReference } from './reference-fallback.js';
+import { getGeminiFallbackReference } from './reference-fallback.js';
 import { createAndShowPopup } from './popup.js';
 import { fail } from './data-models.js';
 
@@ -29,7 +29,7 @@ export async function findMatchingEntry(
     const author = currentElement.searchAuthor;
     const year = currentElement.searchYear;
 
-    // If we came from the Groq title extraction path, be more flexible with matching
+    // If we came from the Gemini title extraction path, be more flexible with matching
     // since we might not have author information
     if (isFromTitleExtraction) {
       matchingEntry = await findBestMatchByTitle(
@@ -179,7 +179,7 @@ async function matchByBibtex(
       .startsWith(title)
   ) {
     if (matchingEntry) {
-      const result = await getGroqFallbackReference(
+      const result = await getGeminiFallbackReference(
         paperId,
         linkHref,
         currentElement

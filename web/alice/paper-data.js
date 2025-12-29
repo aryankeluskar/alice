@@ -4,7 +4,7 @@
 
 import { queuedFetch } from './api.js';
 import { fail } from './data-models.js';
-import { extractTitleWithGroq } from './groq.js';
+import { extractTitleWithGemini } from './gemini.js';
 
 // Function to fetch all data for a paper (extract title -> get S2 -> store)
 export async function fetchDataForPaper(id) {
@@ -23,15 +23,15 @@ export async function fetchDataForPaper(id) {
         pageText.substring(0, 200) + "..."
       );
 
-      // Call Groq API to extract title from the first page text
-      const extractedTitle = await extractTitleWithGroq(pageText);
+      // Call Gemini API to extract title from the first page text
+      const extractedTitle = await extractTitleWithGemini(pageText);
 
       if (extractedTitle) {
         console.log("Extracted title from PDF for", id, ":", extractedTitle);
         // Now fetch Semantic Scholar data using the extracted title
         await fetchAndStoreSemanticScholarData(extractedTitle, id);
       } else {
-        console.error("Could not extract title using Groq for paper ID:", id);
+        console.error("Could not extract title using Gemini for paper ID:", id);
       }
     } catch (error) {
       console.error(

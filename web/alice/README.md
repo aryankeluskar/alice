@@ -7,13 +7,13 @@ Alice is a modular citation reference system for PDF.js that provides intelligen
 The codebase has been refactored into logical modules, each under 300 lines:
 
 ### Core Modules
-- `api.js` - API calls (Groq, ArXiv, Semantic Scholar, BibTeX)
+- `api.js` - API calls (Gemini, ArXiv, Semantic Scholar, BibTeX)
 - `cache.js` - Caching and request queue management
 - `data-models.js` - Data classes and utilities
 - `utils.js` - General utility functions
 
 ### AI & Processing
-- `groq.js` - Groq API processing
+- `gemini.js` - Gemini API processing
 - `markdown.js` - Markdown rendering and text cleaning
 
 ### Data Fetching
@@ -52,7 +52,7 @@ npm test
 
 - **Intelligent Citation Detection**: Automatically detects and processes citation links
 - **Multi-Source Data**: Fetches from ArXiv, Semantic Scholar, and BibTeX APIs
-- **AI-Powered Fallback**: Uses Groq AI for title extraction and matching
+- **AI-Powered Fallback**: Uses Gemini AI for title extraction and matching
 - **Caching**: Reduces API calls with intelligent caching
 - **Responsive Popups**: Scale-aware popups that adapt to PDF zoom levels
 - **Markdown Support**: Rich text rendering for summaries
