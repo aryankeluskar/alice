@@ -202,8 +202,13 @@ export const popup_style = `
       background-color: #e0e0e0;
     }
     .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
       text-align: center;
       padding: calc(20px * var(--space-scale-factor));
+      min-height: calc(100px * var(--total-scale-factor, 1));
     }
     .loading-animation {
       display: inline-block;
