@@ -1,13 +1,13 @@
 /**
- * Fallback reference resolution using Gemini and Semantic Scholar
+ * Fallback reference resolution using Groq and Semantic Scholar
  */
 
 import { queuedFetch } from "./api.js";
 import { ArxivInfo, fail } from "./data-models.js";
 import { buildFallbackReferencePrompt } from "../alice_constants.js";
 
-// Get Gemini fallback reference when arXiv API fails
-export async function getGeminiFallbackReference(
+// Get Groq fallback reference when arXiv API fails
+export async function getGroqFallbackReference(
   paperId,
   linkHref,
   currentElement
@@ -53,47 +53,47 @@ export async function getGeminiFallbackReference(
     cachedReference
   );
 
-  // Call Gemini API
+  // Call Groq API
   let finalResponse;
   try {
-    const response = await fetch("https://api.aryankeluskar.com/api/gemini", {
+    const response = await fetch("https://api.aryankeluskar.com/api/groq", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        contents: [
+        messages: [
           {
-            parts: [
-              {
-                text: fallback_prompt,
-              },
-            ],
+            role: "user",
+            content: fallback_prompt,
           },
         ],
+        model: "llama-3.3-70b-versatile",
+        temperature: 0.2,
+        max_tokens: 100,
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`Gemini API returned status ${response.status}`);
+      throw new Error(`Groq API returned status ${response.status}`);
     }
 
     finalResponse = await response.json();
     console.log("finalResponse", finalResponse);
   } catch (error) {
-    console.error("Error calling Gemini API:", error);
-    fail(currentElement, `Gemini API error: ${error.message}`);
+    console.error("Error calling Groq API:", error);
+    fail(currentElement, `Groq API error: ${error.message}`);
     return null;
   }
 
-  // Extract title from Gemini response
+  // Extract title from Groq response
   let title;
   try {
-    title = finalResponse.candidates[0].content.parts[0].text.trim();
-    console.log("Gemini extracted title:", title);
+    title = finalResponse.choices[0].message.content.trim();
+    console.log("Groq extracted title:", title);
   } catch (error) {
-    console.error("Error extracting title from Gemini response:", error);
-    fail(currentElement, "Invalid Gemini response format");
+    console.error("Error extracting title from Groq response:", error);
+    fail(currentElement, "Invalid Groq response format");
     return null;
   }
 

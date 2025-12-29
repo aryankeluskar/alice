@@ -3,7 +3,7 @@
  * Handles arXiv API queries and XML processing for citations
  */
 
-import { getGeminiFallbackReference } from "./reference-fallback.js";
+import { getGroqFallbackReference } from "./reference-fallback.js";
 import { createAndShowPopup, createAndShowLoadingPopup } from "./popup.js";
 import { fail } from "./data-models.js";
 import { buildArxivQuery } from "./arxiv-query.js";
@@ -62,7 +62,7 @@ export async function processAndQueryArXiv(
     }
 
     try {
-      const result = await getGeminiFallbackReference(
+      const result = await getGroqFallbackReference(
         paperId,
         linkHref,
         currentElement
@@ -135,7 +135,7 @@ export async function processAndQueryArXiv(
       "ArXiv API request timed out after 1000ms, falling back to Semantic Scholar"
     );
     try {
-      const result = await getGeminiFallbackReference(
+      const result = await getGroqFallbackReference(
         paperId,
         linkHref,
         currentElement
@@ -191,7 +191,7 @@ async function onLoadEnd(
 
     // Try Semantic Scholar fallback when ArXiv fails (including CORS errors)
     try {
-      const result = await getGeminiFallbackReference(paperId, linkHref, this);
+      const result = await getGroqFallbackReference(paperId, linkHref, this);
       if (result) {
         await createAndShowPopup({
           element: this,
@@ -223,7 +223,7 @@ async function onLoadEnd(
   }
 
   if (!found) {
-    const result = await getGeminiFallbackReference(paperId, linkHref, this);
+    const result = await getGroqFallbackReference(paperId, linkHref, this);
     if (result) {
       await createAndShowPopup({
         element: this,
@@ -249,7 +249,7 @@ async function onLoadEnd(
   );
 
   if (!matchingEntry) {
-    const result = await getGeminiFallbackReference(paperId, linkHref, this);
+    const result = await getGroqFallbackReference(paperId, linkHref, this);
     if (result) {
       await createAndShowPopup({
         element: this,

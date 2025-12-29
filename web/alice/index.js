@@ -20,15 +20,15 @@ export {
   ensureMathJaxLoaded
 } from './markdown.js';
 export {
-  extractTitleWithGemini,
-  callGeminiAPI,
-  processGeminiResponse
-} from './gemini.js';
+  extractTitleWithGroq,
+  callGroqAPI,
+  processGroqResponse
+} from './groq.js';
 export {
   fetchDataForPaper,
   fetchAndStoreSemanticScholarData
 } from './paper-data.js';
-export { getGeminiFallbackReference } from './reference-fallback.js';
+export { getGroqFallbackReference } from './reference-fallback.js';
 export { createAndShowPopup } from './popup.js';
 export { setupButtonEventListeners } from './popup-buttons.js';
 export { getBibtexReferenceFromInternalLink, parseBibtexReference } from './utils.js';

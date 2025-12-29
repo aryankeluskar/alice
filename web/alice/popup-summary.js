@@ -3,7 +3,7 @@
  */
 
 import { fetchWithRetry } from './api.js';
-import { callGeminiAPI, processGeminiResponse } from './gemini.js';
+import { callGroqAPI, processGroqResponse } from './groq.js';
 import { cleanAIIntroText, cleanupCodeFromResponse, containsPythonCode } from './markdown.js';
 
 export function setupSummaryButton($popup, popupId, state) {
@@ -198,7 +198,7 @@ async function fetchArxivText(link, fullTitle, parser) {
 
 async function generateSummary(arxivText, abstractDiv) {
   try {
-    let geminiResult;
+    let groqResult;
     let retryCount = 0;
     let llmSummaryContent = "";
     let containsCode = false;
@@ -210,13 +210,13 @@ async function generateSummary(arxivText, abstractDiv) {
         );
       }
 
-      geminiResult = await callGeminiAPI(arxivText, retryCount);
+      groqResult = await callGroqAPI(arxivText, retryCount);
       console.log(
-        `Gemini API response (attempt ${retryCount + 1}):`,
-        geminiResult
+        `Groq API response (attempt ${retryCount + 1}):`,
+        groqResult
       );
 
-      llmSummaryContent = await processGeminiResponse(geminiResult);
+      llmSummaryContent = await processGroqResponse(groqResult);
       console.log("LLM summary content:", llmSummaryContent);
 
       containsCode = containsPythonCode(llmSummaryContent);
