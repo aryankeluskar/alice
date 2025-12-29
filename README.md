@@ -12,7 +12,7 @@
   </a>
 </div>
 
-Alice is a Web Extension to supercharge your literature review, making research accessible to all. Just hover on a citation and get all the information you need. Install now from the [chrome webstore](https://dub.sh/alice.pdf?utm_source=readme)!
+Alice is a Web Extension to supercharge your literature review, making research accessible to all. Just hover on a citation and get all the information you need. Install now from [firefox add-ons](https://addons.mozilla.org/en-US/firefox/addon/alice-ai/) or the [chrome webstore](https://dub.sh/alice.pdf?utm_source=readme)!
 
 <img width="1127" alt="brave sample" src="./web/images/425740193-f1ac44ff-c88e-4376-be14-d7714615d8ae.png" />
 <img width="1392" alt="arc sample" src="./web/images/425740187-f8a430f9-369a-4c97-8062-e5483285fe79.png" />
