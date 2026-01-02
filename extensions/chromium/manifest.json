@@ -22,6 +22,7 @@
     "https://www.arxiv.org/pdf/*",
     "https://biorxiv.org/content/*",
     "https://www.biorxiv.org/content/*",
+    "https://openreview.net/pdf/*",
     "https://api.semanticscholar.org/*",
     "https://api.aryankeluskar.com/*"
   ],
@@ -31,7 +32,8 @@
         "https://arxiv.org/pdf/*",
         "https://www.arxiv.org/pdf/*",
         "https://biorxiv.org/content/*",
-        "https://www.biorxiv.org/content/*"
+        "https://www.biorxiv.org/content/*",
+        "https://openreview.net/pdf/*"
       ],
       "run_at": "document_start",
       "all_frames": true,
@@ -63,7 +65,8 @@
         "*://arxiv.org/*",
         "*://biorxiv.org/*",
         "*://www.biorxiv.org/*",
-        "*://www.arxiv.org/*"
+        "*://www.arxiv.org/*",
+        "*://openreview.net/*"
       ],
       "extension_ids": ["*"]
     }

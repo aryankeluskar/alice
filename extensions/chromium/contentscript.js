@@ -24,13 +24,14 @@ function getViewerURL(pdf_url) {
 
 document.addEventListener("animationstart", onAnimationStart, true);
 
-function isArxivOrBiorxivPdf() {
+function isSupportedAcademicPdf() {
   const url = location.href;
   return /^https?:\/\/(www\.)?arxiv\.org\/pdf\//.test(url) ||
-         /^https?:\/\/(www\.)?biorxiv\.org\/content\/.*\.pdf/.test(url);
+         /^https?:\/\/(www\.)?biorxiv\.org\/content\/.*\.pdf/.test(url) ||
+         /^https:\/\/openreview\.net\/pdf/.test(url);
 }
 
-if (isArxivOrBiorxivPdf()) {
+if (isSupportedAcademicPdf()) {
   chrome.runtime.sendMessage({ action: "canRequestBody" }, maybeRenderPdfDoc);
 }
 

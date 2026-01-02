@@ -27,6 +27,10 @@ function extractPaperId() {
     // For bioRxiv URLs like .../10.1101/2025.04.16.649082v1
     const match = currentUrl.match(/\/(\d+\.\d+\/[\d.]+v\d)/);
     if (match) paperId = match[1];
+  } else if (currentUrl.includes("openreview.net")) {
+    // For OpenReview URLs like https://openreview.net/pdf?id=XXXXX
+    const match = currentUrl.match(/[?&]id=([^&]+)/);
+    if (match) paperId = match[1];
   }
 
   return paperId;
