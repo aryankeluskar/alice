@@ -32,6 +32,15 @@ Alice works by using [pdf.js](https://github.com/mozilla/pdf.js), which is a `Ja
 
 This tool is extremely cost-effective. It takes less than 5 cents to generate the code for a given paper, and completely free for summarization since it is supported by Google Gemini. There is no cost of servers or database. With just a few dollars in sponsorship, Alice can operate for years and serve thousands of users without ever charging them a penny. This tool takes less than 1 minute to install and is instantly available when you open a reserach paper.
 
+## Bring Your Own Key (Optional)
+
+Alice works out of the box with no configuration required. However, if you're hitting rate limits, you can configure your own API keys for unlimited usage:
+
+- **Google Gemini API Key** - For AI summaries. Get a free key at [https://aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+- **Semantic Scholar API Key** - Enables paper lookups. Get a free key at [https://www.semanticscholar.org/product/api#api-key](https://www.semanticscholar.org/product/api#api-key)
+
+To configure, right-click the Alice extension icon → Options, or navigate to the extension settings in your browser.
+
 ## Inspiration
 
 Hobbyists, mewbies, and researchers in the field of technology spend more time reading research papers than ever before. The rapid growth and widespread adoption of GenAI technology has sparked greater public interest in the field on an academic level. As an undergraduate researcher and tech optimist, I love reading research papers. They shape our present lives and will continue to guide us to the future. However, academia was not accessible to all readers because of its hefty prerequisites.

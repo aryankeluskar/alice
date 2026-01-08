@@ -1,10 +1,12 @@
-/**
- * Paper data fetching and storage
- */
-
 import { queuedFetch } from './api.js';
 import { fail } from './data-models.js';
 import { extractTitleWithGemini } from './gemini.js';
+import {
+  getSemanticScholarApiKey,
+  buildSemanticScholarHeaders,
+  createRateLimitError,
+  getRateLimitUserMessage,
+} from './api-keys.js';
 
 // Function to fetch all data for a paper (extract title -> get S2 -> store)
 export async function fetchDataForPaper(id) {
@@ -46,20 +48,21 @@ export async function fetchDataForPaper(id) {
   }
 }
 
-// Function to fetch data from Semantic Scholar and store it
 export async function fetchAndStoreSemanticScholarData(title, paperId) {
   console.log(
     `Fetching Semantic Scholar data for title: "${title}", paper ID: ${paperId}`
   );
   try {
-    // First get Semantic Scholar paper ID using title match
-    const requestOptions = {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'application/json',
-        'Accept-Language': 'en-US,en;q=0.9',
-      }
-    };
+    const userApiKey = await getSemanticScholarApiKey();
+    const headers = buildSemanticScholarHeaders(userApiKey);
+    
+    if (userApiKey) {
+      console.log("[Semantic Scholar] Using user's API key");
+    } else {
+      console.log("[Semantic Scholar] Using default rate limits (no user API key configured)");
+    }
+    
+    const requestOptions = { headers };
 
     const matchResponse = await queuedFetch(
       `https://api.semanticscholar.org/graph/v1/paper/search/match?query=${encodeURIComponent(title)}`,

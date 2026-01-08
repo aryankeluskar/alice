@@ -1,7 +1,3 @@
-/**
- * Gemini API integration for paper analysis
- */
-
 import { fetchWithRetry } from './api.js';
 import { renderMarkdown, cleanAIIntroText } from './markdown.js';
 import {
@@ -10,28 +6,64 @@ import {
   PROMPT_SYSTEM_BASE,
   PROMPT_DIRECT_FALLBACK,
 } from '../alice_constants.js';
+import {
+  getGeminiApiKey,
+  buildGeminiDirectUrl,
+  GEMINI_PROXY_ENDPOINT,
+  createRateLimitError,
+  createServerError,
+} from './api-keys.js';
 
-// Function to call Gemini API to extract title
+async function callGeminiEndpoint(requestBody) {
+  const userApiKey = await getGeminiApiKey();
+  
+  let endpoint;
+  let headers = { "Content-Type": "application/json" };
+  
+  if (userApiKey) {
+    endpoint = buildGeminiDirectUrl(userApiKey);
+    console.log("[Gemini] Using user's API key for direct API call");
+  } else {
+    endpoint = GEMINI_PROXY_ENDPOINT;
+    console.log("[Gemini] Using proxy endpoint (no user API key configured)");
+  }
+  
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(requestBody),
+  });
+  
+  if (response.status === 429) {
+    throw createRateLimitError('Gemini', 429);
+  }
+  
+  if (response.status >= 500) {
+    throw createServerError('Gemini', response.status);
+  }
+  
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => 'Unknown error');
+    throw new Error(`Gemini API error (${response.status}): ${errorText}`);
+  }
+  
+  return response.json();
+}
+
 export async function extractTitleWithGemini(pageText) {
   try {
-    const response = await fetch("https://api.aryankeluskar.com/api/gemini", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: PROMPT_EXTRACT_TITLE(pageText),
-              },
-            ],
-          },
-        ],
-      }),
+    const result = await callGeminiEndpoint({
+      contents: [
+        {
+          parts: [
+            {
+              text: PROMPT_EXTRACT_TITLE(pageText),
+            },
+          ],
+        },
+      ],
     });
-    const result = await response.json();
+    
     if (
       result.candidates &&
       result.candidates[0] &&
@@ -43,11 +75,13 @@ export async function extractTitleWithGemini(pageText) {
     return null;
   } catch (error) {
     console.error("Error calling Gemini API for title extraction:", error);
+    if (error.isRateLimitError) {
+      throw error;
+    }
     return null;
   }
 }
 
-// Function to make the Gemini API call
 export async function callGeminiAPI(arxivText, retryCount = 0) {
   if (retryCount > 2) {
     throw new Error(
@@ -55,109 +89,78 @@ export async function callGeminiAPI(arxivText, retryCount = 0) {
     );
   }
 
-  // Update the LLM Prompt for better differentiation between main points and concise summary
   const llmPrompt = PROMPT_LLM_ANALYZE;
-
-  // Use our proxy API endpoint instead of calling Gemini directly
-  const geminiProxyEndpoint = "https://api.aryankeluskar.com/api/gemini";
-
-  // Improved system prompt with clearer differentiation between main points and summary
   let systemPrompt = PROMPT_SYSTEM_BASE({ retryCount });
-  // After 2 retries, fall back to a direct prompt instead of function calling
+  
   if (retryCount >= 2) {
     console.log("Falling back to direct prompt after multiple retries");
 
-    const directPromptResponse = await fetchWithRetry(
-      geminiProxyEndpoint,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: PROMPT_DIRECT_FALLBACK(llmPrompt, arxivText),
-                },
-              ],
-            },
-          ],
-        }),
-      },
-      3
-    );
-
-    return await directPromptResponse.json();
-  }
-
-  const geminiResponse = await fetchWithRetry(
-    geminiProxyEndpoint,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: llmPrompt + arxivText }],
-          },
-        ],
-        // Add generation parameters for better control
-        generationConfig: {
-          temperature: 0.2 + retryCount * 0.1, // Increase temperature slightly on retries
-          topP: 0.8,
-          topK: 40,
-          maxOutputTokens: 300,
-        },
-        systemInstruction: {
-          role: "system",
+    return await callGeminiEndpoint({
+      contents: [
+        {
           parts: [
             {
-              text: systemPrompt,
+              text: PROMPT_DIRECT_FALLBACK(llmPrompt, arxivText),
             },
           ],
         },
-        tools: [
+      ],
+    });
+  }
+
+  return await callGeminiEndpoint({
+    contents: [
+      {
+        parts: [{ text: llmPrompt + arxivText }],
+      },
+    ],
+    generationConfig: {
+      temperature: 0.2 + retryCount * 0.1,
+      topP: 0.8,
+      topK: 40,
+      maxOutputTokens: 300,
+    },
+    systemInstruction: {
+      role: "system",
+      parts: [
+        {
+          text: systemPrompt,
+        },
+      ],
+    },
+    tools: [
+      {
+        functionDeclarations: [
           {
-            functionDeclarations: [
-              {
-                name: "summarizePaper",
-                description:
-                  "Summarize an academic paper in a structured format with analysis of key contributions and a factual summary",
-                parameters: {
-                  type: "OBJECT",
-                  properties: {
-                    mainPoints: {
-                      type: "STRING",
-                      description:
-                        "Focus ONLY on the key contributions of the paper and why they matter. What does this paper contribute to the field? Formatted in Markdown.",
-                    },
-                    conciseSummary: {
-                      type: "STRING",
-                      description:
-                        "A factual summary of the paper in 50 words or less, with no overlap with the main points section. Formatted in Markdown.",
-                    },
-                  },
-                  required: ["mainPoints", "conciseSummary"],
+            name: "summarizePaper",
+            description:
+              "Summarize an academic paper in a structured format with analysis of key contributions and a factual summary",
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                mainPoints: {
+                  type: "STRING",
+                  description:
+                    "Focus ONLY on the key contributions of the paper and why they matter. What does this paper contribute to the field? Formatted in Markdown.",
+                },
+                conciseSummary: {
+                  type: "STRING",
+                  description:
+                    "A factual summary of the paper in 50 words or less, with no overlap with the main points section. Formatted in Markdown.",
                 },
               },
-            ],
+              required: ["mainPoints", "conciseSummary"],
+            },
           },
         ],
-        toolConfig: {
-          functionCallingConfig: {
-            mode: "AUTO",
-          },
-        },
-      }),
+      },
+    ],
+    toolConfig: {
+      functionCallingConfig: {
+        mode: "AUTO",
+      },
     },
-    3
-  );
-
-  return await geminiResponse.json();
+  });
 }
 
 // Process Gemini API response

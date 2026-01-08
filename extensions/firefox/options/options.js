@@ -20,6 +20,8 @@ const browserAPI = (typeof browser !== 'undefined' ? browser : chrome);
 var storageAreaName = browserAPI.storage.sync ? "sync" : "local";
 var storageArea = browserAPI.storage[storageAreaName];
 
+initializeApiKeyHandlers();
+
 Promise.all([
   new Promise(function getManagedPrefs(resolve) {
     if (!browserAPI.storage.managed) {
@@ -209,4 +211,86 @@ function renderDefaultZoomValue(shortDescription) {
     }
   }
   return renderPreference;
+}
+
+function initializeApiKeyHandlers() {
+  var geminiInput = document.getElementById("gemini-api-key");
+  var semanticScholarInput = document.getElementById("semantic-scholar-api-key");
+  
+  if (!geminiInput || !semanticScholarInput) {
+    return;
+  }
+
+  browserAPI.storage.local.get(["geminiApiKey", "semanticScholarApiKey"], function(items) {
+    if (items.geminiApiKey) {
+      geminiInput.value = items.geminiApiKey;
+      geminiInput.classList.add("has-key");
+      updateKeyStatus("gemini", true);
+    }
+    if (items.semanticScholarApiKey) {
+      semanticScholarInput.value = items.semanticScholarApiKey;
+      semanticScholarInput.classList.add("has-key");
+      updateKeyStatus("semantic-scholar", true);
+    }
+  });
+
+  var saveDebounceTimers = {};
+  
+  function saveApiKey(keyName, value, inputElement) {
+    clearTimeout(saveDebounceTimers[keyName]);
+    saveDebounceTimers[keyName] = setTimeout(function() {
+      var saveObj = {};
+      saveObj[keyName] = value.trim();
+      browserAPI.storage.local.set(saveObj, function() {
+        var hasKey = value.trim().length > 0;
+        if (hasKey) {
+          inputElement.classList.add("has-key");
+        } else {
+          inputElement.classList.remove("has-key");
+        }
+        var statusId = keyName === "geminiApiKey" ? "gemini" : "semantic-scholar";
+        updateKeyStatus(statusId, hasKey);
+      });
+    }, 500);
+  }
+
+  geminiInput.addEventListener("input", function() {
+    saveApiKey("geminiApiKey", this.value, this);
+  });
+
+  semanticScholarInput.addEventListener("input", function() {
+    saveApiKey("semanticScholarApiKey", this.value, this);
+  });
+
+  document.querySelectorAll(".toggle-visibility").forEach(function(button) {
+    button.addEventListener("click", function() {
+      var targetId = this.getAttribute("data-target");
+      var input = document.getElementById(targetId);
+      if (input.type === "password") {
+        input.type = "text";
+        this.textContent = "Hide";
+      } else {
+        input.type = "password";
+        this.textContent = "Show";
+      }
+    });
+  });
+}
+
+function updateKeyStatus(keyType, isConfigured) {
+  var statusElement = document.getElementById(keyType + "-key-status");
+  if (!statusElement) return;
+  
+  var dot = statusElement.querySelector(".status-dot");
+  var text = statusElement.querySelector("span:last-child");
+  
+  if (isConfigured) {
+    statusElement.className = "api-key-status configured";
+    dot.className = "status-dot green";
+    text.textContent = "Configured";
+  } else {
+    statusElement.className = "api-key-status not-configured";
+    dot.className = "status-dot gray";
+    text.textContent = "Not configured";
+  }
 }

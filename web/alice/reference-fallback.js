@@ -1,10 +1,15 @@
-/**
- * Fallback reference resolution using Gemini and Semantic Scholar
- */
-
 import { queuedFetch } from "./api.js";
 import { ArxivInfo, fail } from "./data-models.js";
 import { buildFallbackReferencePrompt } from "../alice_constants.js";
+import {
+  getGeminiApiKey,
+  getSemanticScholarApiKey,
+  buildGeminiDirectUrl,
+  buildSemanticScholarHeaders,
+  GEMINI_PROXY_ENDPOINT,
+  createRateLimitError,
+  getRateLimitUserMessage,
+} from "./api-keys.js";
 
 // Get Gemini fallback reference when arXiv API fails
 export async function getGeminiFallbackReference(
@@ -53,14 +58,23 @@ export async function getGeminiFallbackReference(
     cachedReference
   );
 
-  // Call Gemini API
   let finalResponse;
   try {
-    const response = await fetch("https://api.aryankeluskar.com/api/gemini", {
+    const userApiKey = await getGeminiApiKey();
+    let endpoint;
+    let headers = { "Content-Type": "application/json" };
+    
+    if (userApiKey) {
+      endpoint = buildGeminiDirectUrl(userApiKey);
+      console.log("[Gemini Fallback] Using user's API key for direct API call");
+    } else {
+      endpoint = GEMINI_PROXY_ENDPOINT;
+      console.log("[Gemini Fallback] Using proxy endpoint");
+    }
+    
+    const response = await fetch(endpoint, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify({
         contents: [
           {
@@ -74,6 +88,12 @@ export async function getGeminiFallbackReference(
       }),
     });
 
+    if (response.status === 429) {
+      const error = createRateLimitError('Gemini', 429);
+      fail(currentElement, getRateLimitUserMessage('Gemini'));
+      return null;
+    }
+
     if (!response.ok) {
       throw new Error(`Gemini API returned status ${response.status}`);
     }
@@ -82,7 +102,11 @@ export async function getGeminiFallbackReference(
     console.log("finalResponse", finalResponse);
   } catch (error) {
     console.error("Error calling Gemini API:", error);
-    fail(currentElement, `Gemini API error: ${error.message}`);
+    if (error.isRateLimitError) {
+      fail(currentElement, error.userFriendlyMessage);
+    } else {
+      fail(currentElement, `Gemini API error: ${error.message}`);
+    }
     return null;
   }
 
@@ -136,20 +160,20 @@ async function fetchSemanticScholarData(
 ) {
   const semanticScholarId = matchingReference.citedPaper.paperId;
   try {
-    // Fetch data from Semantic Scholar API with retry logic and proper headers
     const apiUrl = `https://api.semanticscholar.org/graph/v1/paper/${semanticScholarId}?fields=title,abstract,year,openAccessPdf,authors`;
 
-    // Add headers to make the request look more like a browser request
-    const requestOptions = {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-        Accept: "application/json",
-        "Accept-Language": "en-US,en;q=0.9",
-      },
-    };
+    const userApiKey = await getSemanticScholarApiKey();
+    const headers = buildSemanticScholarHeaders(userApiKey);
+    
+    if (userApiKey) {
+      console.log("[Semantic Scholar] Using user's API key");
+    } else {
+      console.log("[Semantic Scholar] Using default rate limits");
+    }
 
-    const response = await queuedFetch(apiUrl, requestOptions, 5); // Use queued fetch to prevent concurrent requests
+    const requestOptions = { headers };
+
+    const response = await queuedFetch(apiUrl, requestOptions, 5);
 
     if (!response.ok) {
       throw new Error(
@@ -208,10 +232,8 @@ async function fetchSemanticScholarData(
     console.error("Error fetching Semantic Scholar data:", error);
 
     if (error.message.includes("rate limit") || error.message.includes("429")) {
-      alert(
-        "Semantic Scholar API is currently rate-limited. Alice will try to use cached data or alternative sources. This is temporary - please try again in a few minutes."
-      );
-
+      const userMessage = getRateLimitUserMessage('Semantic Scholar');
+      alert(userMessage);
       return await getCachedReferenceXML(linkHref, currentElement);
     } else {
       alert(

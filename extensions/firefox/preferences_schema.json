@@ -229,6 +229,18 @@
       "description": "Enable creation of hyperlinks from text that look like URLs.",
       "type": "boolean",
       "default": false
+    },
+    "geminiApiKey": {
+      "title": "Google Gemini API Key",
+      "description": "Your personal Google Gemini API key for AI-powered summaries. Get one free at https://aistudio.google.com/apikey",
+      "type": "string",
+      "default": ""
+    },
+    "semanticScholarApiKey": {
+      "title": "Semantic Scholar API Key",
+      "description": "Your personal Semantic Scholar API key for paper lookups. Get one free at https://www.semanticscholar.org/product/api#api-key",
+      "type": "string",
+      "default": ""
     }
   }
 }
