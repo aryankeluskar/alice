@@ -1,8 +1,3 @@
-/**
- * Main entry point for Alice helper functions
- * Re-exports all public functions for backward compatibility
- */
-
 export { ArxivInfo, fail } from './data-models.js';
 export {
   fetchWithRetry,
@@ -32,3 +27,12 @@ export { getGeminiFallbackReference } from './reference-fallback.js';
 export { createAndShowPopup } from './popup.js';
 export { setupButtonEventListeners } from './popup-buttons.js';
 export { getBibtexReferenceFromInternalLink, parseBibtexReference } from './utils.js';
+export {
+  getApiKeys,
+  getGeminiApiKey,
+  getSemanticScholarApiKey,
+  clearKeyCache,
+  openSettingsPage,
+  getRateLimitUserMessage,
+  getServerErrorUserMessage,
+} from './api-keys.js';

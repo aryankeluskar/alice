@@ -235,9 +235,13 @@ async function generateSummary(arxivText, abstractDiv) {
 
     return llmSummaryContent;
   } catch (error) {
-    if (error.message.includes("429")) {
+    if (error.isRateLimitError) {
+      throw new Error(error.userFriendlyMessage || 
+        "We've reached our AI summary limit. To continue, please add your own free Gemini API key in the extension settings (right-click the extension icon > Options)."
+      );
+    } else if (error.message.includes("429")) {
       throw new Error(
-        "AI summary service is currently busy. Please try again in a few minutes."
+        "We've reached our AI summary limit. To continue using Alice without interruptions, please add your own free Gemini API key in the extension settings."
       );
     } else {
       throw error;

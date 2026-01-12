@@ -17,11 +17,14 @@ limitations under the License.
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>PDF.js viewer options</title>
+    <title>Alice Settings</title>
     <style>
       body {
-        min-width: 400px; /* a page at the settings page is at least 400px wide */
-        margin: 14px 17px; /* already added by default in Chrome 40.0.2212.0 */
+        min-width: 400px;
+        max-width: 600px;
+        margin: 14px 17px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        color: #333;
       }
       .settings-row {
         margin: 1em 0;
@@ -33,9 +36,169 @@ limitations under the License.
       .checkbox label input {
         flex-shrink: 0;
       }
+      
+      .api-keys-section {
+        background: linear-gradient(135deg, #f8f7ff 0%, #f0edff 100%);
+        border: 1px solid #C0A9FF;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 24px;
+      }
+      .api-keys-section h2 {
+        margin: 0 0 8px 0;
+        color: #5a4a8a;
+        font-size: 18px;
+        font-weight: 600;
+      }
+      .api-keys-section .section-description {
+        color: #666;
+        font-size: 13px;
+        margin-bottom: 20px;
+        line-height: 1.5;
+      }
+      .api-key-row {
+        margin-bottom: 20px;
+      }
+      .api-key-row:last-child {
+        margin-bottom: 0;
+      }
+      .api-key-row label {
+        display: block;
+        font-weight: 500;
+        margin-bottom: 6px;
+        color: #444;
+        font-size: 14px;
+      }
+      .api-key-row .input-wrapper {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .api-key-row input[type="password"],
+      .api-key-row input[type="text"] {
+        flex: 1;
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        font-family: monospace;
+        transition: border-color 0.2s, box-shadow 0.2s;
+      }
+      .api-key-row input:focus {
+        outline: none;
+        border-color: #C0A9FF;
+        box-shadow: 0 0 0 3px rgba(192, 169, 255, 0.2);
+      }
+      .api-key-row input.has-key {
+        background-color: #f0fff0;
+        border-color: #90EE90;
+      }
+      .api-key-row .toggle-visibility {
+        padding: 8px 12px;
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.2s;
+      }
+      .api-key-row .toggle-visibility:hover {
+        background: #f5f5f5;
+      }
+      .api-key-row .help-text {
+        font-size: 12px;
+        color: #888;
+        margin-top: 6px;
+        line-height: 1.4;
+      }
+      .api-key-row .help-text a {
+        color: #7c5cbf;
+        text-decoration: none;
+      }
+      .api-key-row .help-text a:hover {
+        text-decoration: underline;
+      }
+      .api-key-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        margin-top: 6px;
+      }
+      .api-key-status.configured {
+        color: #2e7d32;
+      }
+      .api-key-status.not-configured {
+        color: #888;
+      }
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+      .status-dot.green {
+        background: #4caf50;
+      }
+      .status-dot.gray {
+        background: #bbb;
+      }
+      
+      .section-divider {
+        border: none;
+        border-top: 1px solid #e0e0e0;
+        margin: 24px 0;
+      }
+      
+      .other-settings-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #555;
+        margin-bottom: 16px;
+      }
     </style>
   </head>
   <body>
+    <div class="api-keys-section">
+      <h2>API Keys (Optional)</h2>
+      <p class="section-description">
+        Alice works out of the box, but you can add your own API keys for unlimited usage. 
+        This is helpful if you're hitting rate limits or want faster responses.
+      </p>
+      
+      <div class="api-key-row">
+        <label for="gemini-api-key">Google Gemini API Key</label>
+        <div class="input-wrapper">
+          <input type="password" id="gemini-api-key" placeholder="Enter your Gemini API key" autocomplete="off" />
+          <button type="button" class="toggle-visibility" data-target="gemini-api-key" title="Show/hide key">Show</button>
+        </div>
+        <p class="help-text">
+          Powers AI summaries. <a href="https://aistudio.google.com/apikey" target="_blank">Get a free key from Google AI Studio</a>
+        </p>
+        <div id="gemini-key-status" class="api-key-status not-configured">
+          <span class="status-dot gray"></span>
+          <span>Not configured</span>
+        </div>
+      </div>
+      
+      <div class="api-key-row">
+        <label for="semantic-scholar-api-key">Semantic Scholar API Key</label>
+        <div class="input-wrapper">
+          <input type="password" id="semantic-scholar-api-key" placeholder="Enter your Semantic Scholar API key" autocomplete="off" />
+          <button type="button" class="toggle-visibility" data-target="semantic-scholar-api-key" title="Show/hide key">Show</button>
+        </div>
+        <p class="help-text">
+          Powers paper lookups and citations. <a href="https://www.semanticscholar.org/product/api#api-key" target="_blank">Get a free key from Semantic Scholar</a>
+        </p>
+        <div id="semantic-scholar-key-status" class="api-key-status not-configured">
+          <span class="status-dot gray"></span>
+          <span>Not configured</span>
+        </div>
+      </div>
+    </div>
+    
+    <hr class="section-divider" />
+    
+    <h3 class="other-settings-title">PDF Viewer Settings</h3>
     <div id="settings-boxes"></div>
     <button id="reset-button" type="button">Restore default settings</button>
 

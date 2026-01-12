@@ -1,8 +1,11 @@
-/**
- * API functions for fetching data from various sources
- */
-
 import { delay, getCachedResponse, setCachedResponse, apiRequestQueue, processQueue } from './cache.js';
+import { 
+  getSemanticScholarApiKey, 
+  buildSemanticScholarHeaders,
+  createRateLimitError,
+  createServerError,
+  getRateLimitUserMessage,
+} from './api-keys.js';
 
 // Helper function to make API calls through background script (bypasses CORS in extension context)
 async function fetchViaBackgroundScript(url, options = {}) {
@@ -102,34 +105,42 @@ export async function fetchWithRetry(url, options = {}, maxRetries = 3) {
         response = await fetch(url, options);
       }
 
-      // If it's a rate limit error, retry with exponential backoff
       if (response.status === 429) {
         const isSemanticScholar = url.includes('semanticscholar.org');
+        const isGemini = url.includes('generativelanguage.googleapis.com') || url.includes('api.aryankeluskar.com/api/gemini');
+
+        if (retries === maxRetries - 1) {
+          const service = isSemanticScholar ? 'Semantic Scholar' : isGemini ? 'Gemini' : 'API';
+          throw createRateLimitError(service, 429);
+        }
 
         if (retries === 0 && isSemanticScholar) {
-          console.warn("⚠️ Semantic Scholar API rate limit hit. Retrying automatically...");
-          // Don't show alert - just log and retry automatically
+          console.warn("Semantic Scholar API rate limit hit. Retrying automatically...");
         }
 
         let waitTime;
         const retryAfterHeader = response.headers.get("Retry-After");
 
         if (retryAfterHeader) {
-          // If server provides retry-after header, use it
           waitTime = parseInt(retryAfterHeader, 10) * 1000;
         } else {
-          // Use exponential backoff with longer initial wait for Semantic Scholar
-          const baseWait = isSemanticScholar ? 5000 : 1000; // 5 seconds for S2, 1 second for others
+          const baseWait = isSemanticScholar ? 5000 : 1000;
           waitTime = baseWait * Math.pow(2, retries);
         }
 
-        // Cap the wait time at 60 seconds
         waitTime = Math.min(waitTime, 60000);
 
         console.log(`Rate limited (429). Retrying after ${waitTime}ms...`);
         await delay(waitTime);
         retries++;
         continue;
+      }
+
+      if (response.status >= 500) {
+        const isSemanticScholar = url.includes('semanticscholar.org');
+        const isGemini = url.includes('generativelanguage.googleapis.com') || url.includes('api.aryankeluskar.com/api/gemini');
+        const service = isSemanticScholar ? 'Semantic Scholar' : isGemini ? 'Gemini' : 'API';
+        throw createServerError(service, response.status);
       }
 
       if (!response.ok) {
